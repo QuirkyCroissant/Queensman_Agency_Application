@@ -35,10 +35,6 @@ if (isset($_GET['bt_superior'])) {
     <link rel="stylesheet" href="design.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <style>
-        .highlight {
-            background-color: #8bf171;
-            color: #232723;
-        }
         /* Scoped styles for showHQ.php */
         .showHQ .agent_table {
             width: 65%;
@@ -87,6 +83,37 @@ if (isset($_GET['bt_superior'])) {
         .showHQ .logout {
             margin-right: 20px;
         }
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1; 
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; 
+            background-color: rgb(0,0,0); 
+            background-color: rgba(0,0,0,0.4); 
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; 
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="showHQ">
@@ -121,7 +148,10 @@ if (isset($_GET['bt_superior'])) {
                             <td><?php echo $employee['EMAIL_ADDRESS']; ?></td>
                             <td><?php echo $employee['FK_POST_CODE']; ?></td>
                             <td><?php echo $employee['SUPERIOR_FS']; ?></td>
-                            <td><input name="Employee" class="w3-radio" type="radio" value="<?php echo $employee['E_ID']; ?>" <?php echo ($selected_e_id == $employee['E_ID']) ? 'checked' : ''; ?>></td>
+                            <td>
+                                <input name="Employee" class="w3-radio" type="radio" value="<?php echo $employee['E_ID']; ?>" <?php echo ($selected_e_id == $employee['E_ID']) ? 'checked' : ''; ?>>
+                                <button type="button" class="assign-btn" data-employee-id="<?php echo $employee['E_ID']; ?>">Assign to Branch</button>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </table>
@@ -138,6 +168,30 @@ if (isset($_GET['bt_superior'])) {
                 </table>
             </div>
         </form>
+
+        <div id="assignModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Assign Employee to Branch</h2>
+                <form action="assign_employee.php" method="post">
+                    <input type="hidden" name="e_id" id="modal-employee-id">
+                    <label for="branch">Select Branch:</label>
+                    <select name="branch" id="branch">
+                        <?php
+                        $branches = $database->selectBranches();
+                        foreach ($branches as $branch) {
+                            echo "<option value='" . $branch['B_ID'] . "'>" . $branch['NAME'] . "</option>";
+                        }
+                        ?>
+                    </select>
+                    <br><br>
+                    <label for="since">Entrance Date:</label>
+                    <input type="date" name="since" required>
+                    <br><br>
+                    <input type="submit" value="Assign">
+                </form>
+            </div>
+        </div>
 
         <div class="res_div">
             <table class="res_table" cellspacing="0" cellpadding="4">
@@ -191,6 +245,27 @@ if (isset($_GET['bt_superior'])) {
             var element = document.querySelector('.highlight');
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            var modal = document.getElementById("assignModal");
+            var span = document.getElementsByClassName("close")[0];
+
+            document.querySelectorAll(".assign-btn").forEach(function(button) {
+                button.onclick = function() {
+                    var employeeId = this.getAttribute("data-employee-id");
+                    document.getElementById("modal-employee-id").value = employeeId;
+                    modal.style.display = "block";
+                }
+            });
+
+            span.onclick = function() {
+                modal.style.display = "none";
+            }
+
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
             }
         });
     </script>

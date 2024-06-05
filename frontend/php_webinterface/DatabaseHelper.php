@@ -56,6 +56,37 @@ class DatabaseHelper
 
     }
 
+    public function selectBranches()
+    {
+        $sql = "SELECT B_ID, NAME FROM BRANCH";
+        $result = $this->conn->query($sql);
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+
+    public function assignEmployeeToBranch($e_id, $b_id, $since)
+    {
+        $sql = "INSERT INTO ASSIGNED_TO (ASS_E_ID, ASS_B_ID, SINCE) VALUES (?, ?, ?)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('iis', $e_id, $b_id, $since);
+        $success = $stmt->execute();
+        $stmt->close();
+
+        return $success;
+    }
+
+    public function getEmployeeAssignments($e_id)
+    {
+        $sql = "SELECT * FROM ASSIGNED_TO WHERE ASS_E_ID = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('i', $e_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $res = $result->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return $res;
+    }
+
     public function selectIndivGadgets($a_id)
     {
         $sql = "SELECT t.T_ID, t.DESCRIPTION, t.AMOUNT FROM TOOL t JOIN AGENT a ON t.FK_A_ID=a.A_ID WHERE t.FK_A_ID = ? ORDER BY t.T_ID";

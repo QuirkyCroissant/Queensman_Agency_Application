@@ -56,15 +56,39 @@ class DatabaseHelper
 
     }
 
-    public function selectBranches()
-    {
+    public function selectBranches() {
         $sql = "SELECT B_ID, NAME FROM BRANCH";
         $result = $this->conn->query($sql);
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
-    public function assignEmployeeToBranch($e_id, $b_id, $since)
-    {
+    public function assignEmployeeToBranch($e_id, $b_id, $since) {
+        // retrieves latest assignment for the employee
+        $sql = "SELECT MAX(SINCE) AS last_since FROM ASSIGNED_TO WHERE ASS_E_ID = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('i', $e_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $last_assignment = $result->fetch_assoc();
+        $stmt->close();
+
+        if ($last_assignment) {
+            $last_since = $last_assignment['last_since'];
+
+            // New assignment date must be later than the previous assignment! -> return false
+            if ($since <= $last_since) {
+                return false; 
+            }
+
+            // Updating the previous assignments "TILL" field
+            $sql = "UPDATE ASSIGNED_TO SET TILL = ? WHERE ASS_E_ID = ? AND TILL IS NULL";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param('si', $since, $e_id);
+            $stmt->execute();
+            $stmt->close();
+        }
+
+        // finally insert the new assignment
         $sql = "INSERT INTO ASSIGNED_TO (ASS_E_ID, ASS_B_ID, SINCE) VALUES (?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param('iis', $e_id, $b_id, $since);
@@ -73,6 +97,7 @@ class DatabaseHelper
 
         return $success;
     }
+
 
     public function getEmployeeAssignments($e_id)
     {

@@ -33,88 +33,9 @@ if (isset($_GET['bt_superior'])) {
 <head>
     <title>Queensman: HQ</title>
     <link rel="stylesheet" href="design.css">
+    <link rel="stylesheet" href="design_showHQ.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <style>
-        /* Scoped styles for showHQ.php */
-        .showHQ .agent_table {
-            width: 65%;
-            float: left;
-            margin-top: 50px;
-            max-width: max-content;
-            border-color: lime;
-            border-style: groove;
-            overflow: auto;
-            max-height: 800px;
-        }
-        .showHQ .option_div, .showHQ .res_div {
-            width: 30%;
-            float: right;
-            margin-top: 50px;
-            border-color: lime;
-            border-style: groove;
-        }
-        .showHQ .agent_table table {
-            table-layout: fixed;
-            width: 100%;
-        }
-        .showHQ .agent_table th, .showHQ .agent_table td {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .showHQ .agent_table th:nth-child(1), .showHQ .agent_table td:nth-child(1) { width: 5%; }
-        .showHQ .agent_table th:nth-child(2), .showHQ .agent_table td:nth-child(2) { width: 10%; }
-        .showHQ .agent_table th:nth-child(3), .showHQ .agent_table td:nth-child(3) { width: 10%; }
-        .showHQ .agent_table th:nth-child(4), .showHQ .agent_table td:nth-child(4) { width: 15%; }
-        .showHQ .agent_table th:nth-child(5), .showHQ .agent_table td:nth-child(5) { width: 15%; }
-        .showHQ .agent_table th:nth-child(6), .showHQ .agent_table td:nth-child(6) { width: 15%; }
-        .showHQ .agent_table th:nth-child(7), .showHQ .agent_table td:nth-child(7) { width: 10%; }
-        .showHQ .agent_table th:nth-child(8), .showHQ .agent_table td:nth-child(8) { width: 10%; }
-        .showHQ .agent_table th:nth-child(9), .showHQ .agent_table td:nth-child(9) { width: 10%; }
-        .showHQ .header_div {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-        }
-        .showHQ .header_img {
-            height: 50px;
-        }
-        .showHQ .logout {
-            margin-right: 20px;
-        }
-        .modal {
-            display: none; 
-            position: fixed; 
-            z-index: 1; 
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto; 
-            background-color: rgb(0,0,0); 
-            background-color: rgba(0,0,0,0.4); 
-        }
-        .modal-content {
-            background-color: #fefefe;
-            margin: 15% auto; 
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%; 
-        }
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-        .close:hover,
-        .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-    </style>
+    
 </head>
 <body class="showHQ">
     <div class="masterdiv">
@@ -124,6 +45,13 @@ if (isset($_GET['bt_superior'])) {
             <a href="logout.php" class="logout">Logout</a>
         </div>
 
+        <?php
+        if (isset($_SESSION['message'])) {
+            echo "<div class='message'>" . $_SESSION['message'] . "</div>";
+            unset($_SESSION['message']);
+        }
+        ?>
+
         <form action="" method="get" name="employee_form">
             <div class="agent_table">
                 <table class="a_t" cellspacing="0" cellpadding="4">
@@ -132,10 +60,7 @@ if (isset($_GET['bt_superior'])) {
                         <th>FIRST NAME</th>
                         <th>LAST NAME</th>
                         <th>TELEPHONE</th>
-                        <th>STREET</th>
                         <th>EMAIL</th>
-                        <th>POST CODE</th>
-                        <th>SUPERIOR</th>
                         <th></th>
                     </tr>
                     <?php foreach ($employees_array as $employee) : ?>
@@ -144,10 +69,7 @@ if (isset($_GET['bt_superior'])) {
                             <td><?php echo $employee['FIRST_NAME']; ?></td>
                             <td><?php echo $employee['LAST_NAME']; ?></td>
                             <td><?php echo $employee['TELEPHONE_NUMBER']; ?></td>
-                            <td><?php echo $employee['STREET']; ?></td>
                             <td><?php echo $employee['EMAIL_ADDRESS']; ?></td>
-                            <td><?php echo $employee['FK_POST_CODE']; ?></td>
-                            <td><?php echo $employee['SUPERIOR_FS']; ?></td>
                             <td>
                                 <input name="Employee" class="w3-radio" type="radio" value="<?php echo $employee['E_ID']; ?>" <?php echo ($selected_e_id == $employee['E_ID']) ? 'checked' : ''; ?>>
                                 <button type="button" class="assign-btn" data-employee-id="<?php echo $employee['E_ID']; ?>">Assign to Branch</button>

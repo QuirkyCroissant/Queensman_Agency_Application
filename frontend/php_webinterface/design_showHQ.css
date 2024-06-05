@@ -1,0 +1,82 @@
+/* Scoped styles for showHQ.php */
+
+.highlight {
+    background-color: #8bf171;
+    color: #232723;
+}
+
+.showHQ .agent_table {
+    width: 65%;
+    float: left;
+    margin-top: 50px;
+    max-width: max-content;
+    border-color: lime;
+    border-style: groove;
+    overflow: auto;
+    max-height: 800px;
+}
+.showHQ .option_div, .showHQ .res_div {
+    width: 30%;
+    float: right;
+    margin-top: 50px;
+    border-color: lime;
+    border-style: groove;
+}
+.showHQ .agent_table table {
+    table-layout: fixed;
+    width: 100%;
+}
+.showHQ .agent_table th, .showHQ .agent_table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.showHQ .agent_table th:nth-child(1), .showHQ .agent_table td:nth-child(1) { width: 5%; }
+.showHQ .agent_table th:nth-child(2), .showHQ .agent_table td:nth-child(2) { width: 15%; }
+.showHQ .agent_table th:nth-child(3), .showHQ .agent_table td:nth-child(3) { width: 15%; }
+.showHQ .agent_table th:nth-child(4), .showHQ .agent_table td:nth-child(4) { width: 20%; }
+.showHQ .agent_table th:nth-child(5), .showHQ .agent_table td:nth-child(5) { width: 25%; }
+.showHQ .agent_table th:nth-child(6), .showHQ .agent_table td:nth-child(6) { width: 20%; }
+.showHQ .header_div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
+.showHQ .header_img {
+    height: 50px;
+}
+.showHQ .logout {
+    margin-right: 20px;
+}
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1; 
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.4); 
+}
+.modal-content {
+    background-color: #000;
+    color: lime;
+    margin: 15% auto; 
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; 
+}
+.close {
+    color: lime;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+.close:hover,
+.close:focus {
+    color: white;
+    text-decoration: none;
+    cursor: pointer;
+}

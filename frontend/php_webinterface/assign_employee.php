@@ -23,7 +23,7 @@
         if ($success) {
             $_SESSION['message'] = "Employee assigned successfully.";
         } else {
-            $_SESSION['message'] = "Error assigning employee.";
+            $_SESSION['message'] = "Error assigning employee. Make sure the entrance date is later than the previous assignments.";
         }
     }
 

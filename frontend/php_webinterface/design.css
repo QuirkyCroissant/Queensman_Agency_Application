@@ -121,6 +121,7 @@ input[type=w3-radio] {
 
 td {
     text-align: center;
+    height: 100%;
 }
 
 .agent_table tr:hover {
@@ -147,6 +148,14 @@ td {
     overflow-y: scroll;
     height: 800px;
 
+}
+
+.desk-duty-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 100%;
 }
 
 

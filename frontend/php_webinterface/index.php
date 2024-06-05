@@ -74,7 +74,14 @@
                             <td><?php echo $agent['E_ID']; ?>  </td>
                             <td><?php echo $agent['CAPABILITY_LEVEL']; ?>  </td>
                             <td><?php echo $agent['A_ROLE']; ?>  </td>
-                            <td><input name="Agent" class="w3-radio" type="radio" value="<?php echo $agent['A_ID']; ?>"></td>
+                            <td>
+                                <input name="Agent" class="w3-radio" type="radio" value="<?php echo $agent['A_ID']; ?>">
+                            </td>
+                            <td class="desk-duty-cell">
+                                <form action="showHQ.php" method="get">
+                                    <button name="bt_changeEmployeePOV" value="<?php echo $agent['E_ID']; ?>">Desk Duty</button>
+                                </form>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                     </table>

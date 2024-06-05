@@ -2,10 +2,12 @@
 
 class DatabaseHelper
 {
-    const username = 'root'; // your MySQL username
-    const password = 'your_new_password'; // your MySQL password
-    const host = 'localhost';
-    const port = '3307';
+    const username = 'root';
+    const password = 'Schikuta<3';
+    const host = 'mysqldb';
+    # port needed to be changed to internal listening port number to be able to 
+    # communicate with docker database in internal network
+    const port = '3306';
     const dbname = 'mysql_queensmandb';
 
     protected $conn;
@@ -42,19 +44,34 @@ class DatabaseHelper
         return $res;
     }
 
-    public function selectIndivGadgets($a_id)
-    {
-        $sql = "SELECT t.T_ID, t.DESCRIPTION, t.AMOUNT FROM TOOL t JOIN agent a ON t.FK_A_ID=a.A_ID WHERE t.FK_A_ID = ? ORDER BY t.T_ID";
+    public function selectAllEmployees(){
+        $sql = "SELECT * FROM EMPLOYEE";
 
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('i', $a_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $result = $this->conn->query($sql);
         $res = $result->fetch_all(MYSQLI_ASSOC);
 
-        $stmt->close();
+        $result->free();
 
         return $res;
+
+    }
+
+    public function selectIndivGadgets($a_id)
+    {
+        $sql = "SELECT t.T_ID, t.DESCRIPTION, t.AMOUNT FROM TOOL t JOIN AGENT a ON t.FK_A_ID=a.A_ID WHERE t.FK_A_ID = ? ORDER BY t.T_ID";
+
+        if($stmt = $this->conn->prepare($sql)){
+            $stmt->bind_param('i', $a_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $res = $result->fetch_all(MYSQLI_ASSOC);
+
+            $stmt->close();
+
+            return $res;
+        } else{
+            die("Error preparing statement: " . $this->conn->error);
+        }
     }
 
     public function selectSpecificTool($t_id)

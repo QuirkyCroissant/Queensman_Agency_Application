@@ -206,12 +206,13 @@ if len(result) != row_analy_cnt:
     for elem in fk_analyst_e_id:
         fake_analyst["e_id"].append(elem)
         fake_analyst["specialisation"].append(random.choice(specs))
+        fake_analyst["years_of_experience"].append(random.randint(0, 10))
 
     df_fake_analyst = pd.DataFrame(fake_analyst)
     print(df_fake_analyst.info())
 
     rows = [tuple(x) for x in df_fake_analyst.values]
-    curs.executemany("INSERT INTO ANALYST (E_ID, SPECIALISATION) VALUES (%s, %s)", rows)
+    curs.executemany("INSERT INTO ANALYST (E_ID, SPECIALISATION, YEARS_OF_EXPERIENCE) VALUES (%s, %s, %s)", rows)
     connection.commit()
 
     print("SUCCESS; INSERTED " + str(row_analy_cnt) + " ROWS IN ANALYST! \n")
@@ -284,12 +285,13 @@ if len(result) == 0:
     fake_fac_type = defaultdict(list)
     for f in fac_list:
         fake_fac_type["type"].append(f)
+        fake_fac_type["capacity"].append(random.randint(2000, 10000))
 
     df_fake_facility_type = pd.DataFrame(fake_fac_type)
     print(df_fake_facility_type.info())
 
     rows = [tuple(x) for x in df_fake_facility_type.values]
-    curs.executemany("INSERT INTO FACILITY_TYPE (TYPE) VALUES (%s)", rows)
+    curs.executemany("INSERT INTO FACILITY_TYPE (TYPE, CAPACITY) VALUES (%s, %s)", rows)
     connection.commit()
 
     print("SUCCESS; INSERTED " + str(len(fac_list)) + " ROWS IN FACILITY_TYPE!\n")
@@ -536,13 +538,21 @@ if len(result) == 0:
         mission_date = fake.date_between(datetime(2003, 5, 30), datetime.now())
         fake_missions["m_date"].append(mission_date.strftime('%Y-%m-%d'))
 
+        is_ongoing = False
         if datetime.combine(mission_date, datetime.min.time()) > datetime(2014, 6, 6):
             if random.randint(1, 4) == 4:
                 fake_missions["ongoing"].append(1)
+                is_ongoing = True
             else:
                 fake_missions["ongoing"].append(0)
         else:
             fake_missions["ongoing"].append(0)
+
+        stillgoing_status_list = ["SUCCESSFUL", "FAILED"]
+        if is_ongoing:
+            fake_missions["status"].append("PENDING")
+        else:
+            fake_missions["status"].append(random.choice(stillgoing_status_list))
 
         fake_missions["fk_s_id"].append(_ + 1)
         partner_key = random.choice(ex_p_ids)[0]
@@ -556,7 +566,7 @@ if len(result) == 0:
     print(df_fake_missions.info())
 
     rows = [tuple(x) for x in df_fake_missions.values]
-    curs.executemany("INSERT INTO MISSIONLOG (CODENAME, DESCRIPTION, M_DATE, ONGOING, FK_S_ID, FK_P_ID) VALUES (%s, %s, %s, %s, %s, %s)", rows)
+    curs.executemany("INSERT INTO MISSIONLOG (CODENAME, DESCRIPTION, M_DATE, ONGOING, STATUS, FK_S_ID, FK_P_ID) VALUES (%s, %s, %s, %s, %s, %s, %s)", rows)
     connection.commit()
 
 # Check and populate TAKES_ON table

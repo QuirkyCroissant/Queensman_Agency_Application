@@ -1,6 +1,6 @@
 import random
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from tqdm import tqdm
 
 import mysql.connector
@@ -475,9 +475,13 @@ if len(result) == 0:
         old_branch_id = rows_of_interest[0][2]
         old_since_date = rows_of_interest[0][3]
 
-        transfer_date = datetime(2000, 1, 1)
+        if isinstance(old_since_date, datetime):
+            old_since_date = old_since_date.date()
+
+        transfer_date = date(2000, 1, 1)
         while transfer_date < old_since_date:
-            transfer_date = datetime.combine(fake.date_between(datetime(2004, 1, 1), datetime(2015, 12, 22)), datetime.min.time())
+            # Generate transfer_date as a date object
+            transfer_date = fake.date_between(date(2004, 1, 1), date(2015, 12, 22))
 
         transfer_date = transfer_date.strftime('%Y-%m-%d')
         change_stmt = "UPDATE ASSIGNED_TO SET TILL=%s WHERE ASS_E_ID=%s AND ASS_B_ID=%s"

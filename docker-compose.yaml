@@ -1,0 +1,48 @@
+version: '3'
+services:
+
+  frontend:
+    build: ./frontend/php_webinterface
+    container_name: frontend_php
+    ports:
+      - "80:80"
+    depends_on:
+      - mysql
+      - mongodb
+
+  backend:
+    build: ./backend/python
+    container_name: dbdata_python
+    depends_on:
+      - mysql
+      - mongodb
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysqldb
+    environment:
+      MYSQL_USER: myuser
+      MYSQL_DATABASE: mysql_queensmandb
+      MYSQL_PASSWORD: mypassword
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./relational/mysql_scripts:/docker-entrypoint-initdb.d
+      - mysqldb:/var/lib/mysql
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./non_relational/mongo_scripts/init:/docker-entrypoint-initdb.d
+
+networks:
+  backend_network:
+
+volumes:
+  mysqldb:
+  mongodata:
+    

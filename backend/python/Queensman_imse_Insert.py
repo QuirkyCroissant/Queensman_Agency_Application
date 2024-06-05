@@ -1,16 +1,15 @@
 import random
 from collections import defaultdict
 from datetime import datetime, timedelta, date
-from tqdm import tqdm
 
 import mysql.connector
 import pandas as pd
 from faker import Faker
 
 username = "root"  # db user name
-password = "pilguin"  # db password
+password = "Schikuta<3"  # db password
 host = "localhost"  # db host
-database = "QUEENSMAN"  # db name
+database = "mysql_queensmandb"  # db name
 
 # Consider using with to avoid open connections
 connection = mysql.connector.connect(user=username, password=password, host=host, database=database, port=3307)
@@ -38,7 +37,7 @@ if len(result) != row_pc_cnt:
     print("################ POST_CODE-TABLE ################")
     fake_post_code = defaultdict(list)
 
-    for _ in tqdm(range(row_pc_cnt)):
+    for _ in range(row_pc_cnt):
         if _ != 20:
             fake_post_code["post_code"].append(fake.postcode())
             fake_post_code["city"].append(fake.city())

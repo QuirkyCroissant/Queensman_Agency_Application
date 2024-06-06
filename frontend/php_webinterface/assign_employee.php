@@ -17,8 +17,9 @@
         $e_id = $_POST['e_id'];
         $branch = $_POST['branch'];
         $since = $_POST['since'];
+        $till = $_POST['till'];
 
-        $success = $database->assignEmployeeToBranch($e_id, $branch, $since);
+        $success = $database->assignEmployeeToBranch($e_id, $branch, $since, $till);
 
         if ($success) {
             $_SESSION['message'] = "Employee assigned successfully.";

@@ -18,7 +18,6 @@
 .showHQ .option_div, .showHQ .res_div {
     width: 30%;
     float: right;
-    margin-top: 50px;
     border-color: lime;
     border-style: groove;
 }

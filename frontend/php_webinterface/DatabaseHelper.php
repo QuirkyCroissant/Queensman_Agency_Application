@@ -62,7 +62,7 @@ class DatabaseHelper
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
-    public function assignEmployeeToBranch($e_id, $b_id, $since) {
+    public function assignEmployeeToBranch($e_id, $b_id, $since, $till) {
         // retrieves latest assignment for the employee
         $sql = "SELECT MAX(SINCE) AS last_since FROM ASSIGNED_TO WHERE ASS_E_ID = ?";
         $stmt = $this->conn->prepare($sql);
@@ -89,9 +89,17 @@ class DatabaseHelper
         }
 
         // finally insert the new assignment
-        $sql = "INSERT INTO ASSIGNED_TO (ASS_E_ID, ASS_B_ID, SINCE) VALUES (?, ?, ?)";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('iis', $e_id, $b_id, $since);
+        // if we already get a termination date in "till" we add it to the insert
+        if($till != null){
+            $sql = "INSERT INTO ASSIGNED_TO (ASS_E_ID, ASS_B_ID, SINCE, TILL) VALUES (?, ?, ?, ?)";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param('iiss', $e_id, $b_id, $since, $till);
+        } else {
+            $sql = "INSERT INTO ASSIGNED_TO (ASS_E_ID, ASS_B_ID, SINCE) VALUES (?, ?, ?)";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param('iis', $e_id, $b_id, $since);
+        }
+        
         $success = $stmt->execute();
         $stmt->close();
 
@@ -101,7 +109,13 @@ class DatabaseHelper
 
     public function getEmployeeAssignments($e_id)
     {
-        $sql = "SELECT * FROM ASSIGNED_TO WHERE ASS_E_ID = ?";
+        $sql = "SELECT ASS_ID, NAME, ft.`TYPE`, CITY, SINCE, TILL  
+                FROM ASSIGNED_TO 
+                LEFT JOIN BRANCH ON ASS_B_ID = B_ID 
+                LEFT JOIN FACILITY_TYPE ft ON FK_TYPE=ft.FT_ID 
+                LEFT JOIN POST_CODE pc ON FK_POST_CODE  = PC_ID 
+                WHERE ASS_E_ID = ?";
+
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param('i', $e_id);
         $stmt->execute();

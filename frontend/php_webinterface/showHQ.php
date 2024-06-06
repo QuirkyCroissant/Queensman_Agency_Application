@@ -18,13 +18,14 @@ $employees_array = $database->selectAllEmployees();
 
 $selected_e_id = isset($_GET['bt_changeEmployeePOV']) ? $_GET['bt_changeEmployeePOV'] : null;
 
+// fetch Employee Transfer History
 if (isset($_GET['bt_transferHistory'])) {
-    $e_id = $_GET['bt_changeEmployeePOV'];
-    #$transfer_history = $database->selectTransferHistory($e_id); // still needs to be implemented
+    $e_id = $_GET['Employee'];
+    $transfer_history = $database->getEmployeeAssignments($e_id); 
 }
 
 if (isset($_GET['bt_superior'])) {
-    $e_id = $_GET['bt_changeEmployeePOV'];
+    $e_id = $_GET['Employee'];
     #$superior_info = $database->selectSuperiorInfo($e_id); // still needs to be implemented
 }
 ?>
@@ -110,6 +111,9 @@ if (isset($_GET['bt_superior'])) {
                     <label for="since">Entrance Date:</label>
                     <input type="date" name="since" required>
                     <br><br>
+                    <label for="till">Termination Date(optional):</label>
+                    <input type="date" name="till">
+                    <br><br>
                     <input type="submit" value="Assign">
                 </form>
             </div>
@@ -123,17 +127,19 @@ if (isset($_GET['bt_superior'])) {
                         <th>Employee #<?php echo $e_id ?></th>
                     </tr>
                     <tr>
-                        <th>TRANSFER ID</th>
-                        <th>FROM DEPARTMENT</th>
-                        <th>TO DEPARTMENT</th>
-                        <th>DATE</th>
+                        <th>FACILITY NAME</th>
+                        <th>DEPARTMENT TYPE</th>
+                        <th>CITY</th>
+                        <th>SINCE</th>
+                        <th>TILL</th>
                     </tr>
                     <?php foreach ($transfer_history as $transfer) : ?>
                         <tr>
-                            <td><?php echo $transfer['TRANSFER_ID']; ?></td>
-                            <td><?php echo $transfer['FROM_DEPARTMENT']; ?></td>
-                            <td><?php echo $transfer['TO_DEPARTMENT']; ?></td>
-                            <td><?php echo $transfer['DATE']; ?></td>
+                            <td><?php echo $transfer['NAME']; ?></td>
+                            <td><?php echo $transfer['TYPE']; ?></td>
+                            <td><?php echo $transfer['CITY']; ?></td>
+                            <td><?php echo $transfer['SINCE']; ?></td>
+                            <td><?php echo $transfer['TILL']; ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>

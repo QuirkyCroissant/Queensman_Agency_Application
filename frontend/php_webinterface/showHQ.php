@@ -26,8 +26,11 @@ if (isset($_GET['bt_transferHistory'])) {
 
 if (isset($_GET['bt_superior'])) {
     $e_id = $_GET['Employee'];
-    #$superior_info = $database->selectSuperiorInfo($e_id); // still needs to be implemented
+    $superior_and_team = $database->getSuperiorAndTeam($e_id);
+    $superior_info = $superior_and_team['superior'];
+    $team_info = $superior_and_team['team'];
 }
+
 ?>
 
 <html>
@@ -36,7 +39,6 @@ if (isset($_GET['bt_superior'])) {
     <link rel="stylesheet" href="design.css">
     <link rel="stylesheet" href="design_showHQ.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    
 </head>
 <body class="showHQ">
     <div class="masterdiv">
@@ -111,7 +113,7 @@ if (isset($_GET['bt_superior'])) {
                     <label for="since">Entrance Date:</label>
                     <input type="date" name="since" required>
                     <br><br>
-                    <label for="till">Termination Date(optional):</label>
+                    <label for="till">Termination Date (optional):</label>
                     <input type="date" name="till">
                     <br><br>
                     <input type="submit" value="Assign">
@@ -148,21 +150,36 @@ if (isset($_GET['bt_superior'])) {
                     <tr>
                         <th>&nbsp;</th>
                         <th>Employee #<?php echo $e_id ?></th>
+                        <th><button type="button" class="promote-btn" data-employee-id="<?php echo $e_id; ?>">Promote Employee</button></tr>
                     </tr>
                     <tr>
                         <th>SUPERIOR ID</th>
                         <th>FIRST NAME</th>
                         <th>LAST NAME</th>
-                        <th>POSITION</th>
                     </tr>
-                    <?php foreach ($superior_info as $superior) : ?>
+                    <tr>
+                        <td><?php echo $superior_info['SUPERIOR_ID']; ?></td>
+                        <td><?php echo $superior_info['SUPERIOR_FIRST_NAME']; ?></td>
+                        <td><?php echo $superior_info['SUPERIOR_LAST_NAME']; ?></td>
+                    </tr>
+                    <tr>
+                        <th>&nbsp;</th>
+                        <th>Team Members</th>
+                        <th>&nbsp;</th>
+                    </tr>
+                    <tr>
+                        <th>E_ID</th>
+                        <th>FIRST NAME</th>
+                        <th>LAST NAME</th>
+                    </tr>
+                    <?php foreach ($team_info as $member) : ?>
                         <tr>
-                            <td><?php echo $superior['SUPERIOR_ID']; ?></td>
-                            <td><?php echo $superior['FIRST_NAME']; ?></td>
-                            <td><?php echo $superior['LAST_NAME']; ?></td>
-                            <td><?php echo $superior['POSITION']; ?></td>
+                            <td><?php echo $member['E_ID']; ?></td>
+                            <td><?php echo $member['FIRST_NAME']; ?></td>
+                            <td><?php echo $member['LAST_NAME']; ?></td>
                         </tr>
                     <?php endforeach; ?>
+                    
                 <?php endif; ?>
             </table>
         </div>
@@ -195,6 +212,13 @@ if (isset($_GET['bt_superior'])) {
                     modal.style.display = "none";
                 }
             }
+
+            document.querySelectorAll(".promote-btn").forEach(function(button) {
+                button.onclick = function() {
+                    var employeeId = this.getAttribute("data-employee-id");
+                    window.location.href = "promote_employee.php?e_id=" + employeeId;
+                }
+            });
         });
     </script>
 </body>

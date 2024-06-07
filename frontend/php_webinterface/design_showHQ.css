@@ -15,7 +15,24 @@
     overflow: auto;
     max-height: 800px;
 }
-.showHQ .option_div, .showHQ .res_div {
+
+.showHQ .res_div {
+    width: 30%;
+    float: right;
+    margin-top: 120px;
+    border-color: lime;
+    border-style: groove;
+    max-height: 745px;
+    overflow-y: auto;
+}
+/*
+.showHQ .res_table th, .showHQ .res_table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+*/
+.showHQ .option_div {
     width: 30%;
     float: right;
     border-color: lime;

@@ -285,7 +285,7 @@ class DatabaseHelper
 
     public function selectIndivMissions($a_id)
     {
-        $sql = "SELECT m.M_ID, m.CODENAME, m.DESCRIPTION, m.M_DATE, m.ONGOING, s.FIRST_NAME, s.LAST_NAME, s.COI, ep.NAME FROM MISSIONLOG m JOIN TAKES_ON t ON m.M_ID=t.FK_M_ID JOIN AGENT a ON a.A_ID=t.FK_A_ID LEFT JOIN EXTERN_PARTNER ep ON m.FK_P_ID=ep.P_ID JOIN SUBJECT s ON m.FK_S_ID=s.S_ID WHERE t.FK_A_ID = ? ORDER BY m.M_ID";
+        $sql = "SELECT m.M_ID, m.CODENAME, m.DESCRIPTION, m.M_DATE, m.ONGOING, m.STATUS, s.FIRST_NAME, s.LAST_NAME, s.COI, ep.NAME FROM MISSIONLOG m JOIN TAKES_ON t ON m.M_ID=t.FK_M_ID JOIN AGENT a ON a.A_ID=t.FK_A_ID LEFT JOIN EXTERN_PARTNER ep ON m.FK_P_ID=ep.P_ID JOIN SUBJECT s ON m.FK_S_ID=s.S_ID WHERE t.FK_A_ID = ? ORDER BY m.M_ID";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param('i', $a_id);
@@ -297,6 +297,78 @@ class DatabaseHelper
 
         return $res;
     }
+
+    //################USECASE1################
+    public function selectAllMissions()
+    {
+        $sql = "SELECT m.M_ID, m.CODENAME, m.DESCRIPTION, m.M_DATE, m.ONGOING, m.STATUS FROM MISSIONLOG m";
+
+        $result = $this->conn->query($sql);
+        $res = $result->fetch_all(MYSQLI_ASSOC);
+
+        $result->free();
+
+        return $res;
+    }
+
+    public function selectAgentsAssignedToMission($m_id)
+    {
+        $sql = "SELECT a.A_ID, e.FIRST_NAME, e.LAST_NAME FROM AGENT a JOIN TAKES_ON t ON a.A_ID = t.FK_A_ID JOIN EMPLOYEE e ON a.E_ID = e.E_ID WHERE t.FK_M_ID = ?";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('i', $m_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $res = $result->fetch_all(MYSQLI_ASSOC);
+
+        $stmt->close();
+
+        return $res;
+    }
+
+    public function assignAgentsToMission($m_id, $agent_ids) {
+        $sql_delete = "DELETE FROM TAKES_ON WHERE FK_M_ID = ?";
+        $stmt_delete = $this->conn->prepare($sql_delete);
+        $stmt_delete->bind_param('i', $m_id);
+        $stmt_delete->execute();
+        $stmt_delete->close();
+    
+        foreach ($agent_ids as $a_id) {
+            $sql_insert = "INSERT INTO TAKES_ON (FK_A_ID, FK_M_ID) VALUES (?, ?)";
+            $stmt_insert = $this->conn->prepare($sql_insert);
+            $stmt_insert->bind_param('ii', $a_id, $m_id);
+            $stmt_insert->execute();
+            $stmt_insert->close();
+        }
+        return true;
+    }
+    //################USECASE1END################
+
+    #####REPORT#####
+    public function getSuccessfulAgentsReport() {
+        $sql = "
+            SELECT 
+                a.A_ID, 
+                e.LAST_NAME, 
+                COUNT(m.M_ID) AS successful_missions, 
+                COUNT(DISTINCT m.FK_S_ID) AS successful_missions_unique_subjects
+            FROM 
+                AGENT a
+            JOIN 
+                EMPLOYEE e ON a.E_ID = e.E_ID
+            LEFT JOIN 
+                TAKES_ON t ON a.A_ID = t.FK_A_ID
+            LEFT JOIN 
+                MISSIONLOG m ON t.FK_M_ID = m.M_ID AND m.STATUS = 'SUCCESSFUL' AND m.M_DATE >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+            GROUP BY 
+                a.A_ID, e.LAST_NAME
+            ORDER BY 
+                successful_missions_unique_subjects DESC, successful_missions DESC";
+    
+        $result = $this->conn->query($sql);
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+    #####REPORTEND##
 
     public function insertMission($m_code, $desc, $m_date, $m_going, $m_subjects, $m_partners)
     {

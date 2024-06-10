@@ -11,7 +11,6 @@
 
     // Instantiate DatabaseHelper class
     $database = new DatabaseHelper();
-
     $mission_data = $database->selectSpecificMission($_GET['bt_updateMission']);
     
     $mission_data_m_id='';

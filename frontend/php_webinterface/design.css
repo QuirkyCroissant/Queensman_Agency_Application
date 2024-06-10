@@ -181,12 +181,14 @@ td {
     position: fixed;
     top:0;
     right:0;
-    margin-top: 150px;
-    /* max-height: 50%; */
+    margin-top: 200px;
+    max-height: 500px;
     width: 50%;
 
     border-color: lime;
     border-style: groove;
+
+    overflow-y: auto;
 }
 
 /* -------------- addTool.php -------------- */

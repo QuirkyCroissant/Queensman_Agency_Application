@@ -447,7 +447,7 @@ if len(result) == 0:
         fake_assigned["ass_e_id"].append(_ + 1)
         fac_key = int(random.choice(branch_ids)[0])
         fake_assigned["ass_b_id"].append(fac_key)
-        fake_assigned["since"].append((fake.date_between(datetime(2002, 6, 30), datetime(2010, 2, 3))).strftime('%Y-%m-%d'))
+        fake_assigned["since"].append((fake.date_between(datetime(2015, 1, 1), datetime(2021, 1, 1))).strftime('%Y-%m-%d'))
         fake_assigned["till"].append(None)
 
     df_fake_assigned = pd.DataFrame(fake_assigned)
@@ -458,7 +458,7 @@ if len(result) == 0:
     connection.commit()
     print("SUCCESS; INSERTED " + str(len(df_fake_assigned)) + " ROWS IN ASSIGNED_TO!\n")
 
-    transfer_number = int(len(emp_ids) * 0.2)
+    transfer_number = int(len(emp_ids) * 0.4)
     transferees = []
 
     while len(transferees) < transfer_number:
@@ -482,7 +482,7 @@ if len(result) == 0:
         transfer_date = date(2000, 1, 1)
         while transfer_date < old_since_date:
             # Generate transfer_date as a date object
-            transfer_date = fake.date_between(date(2004, 1, 1), date(2015, 12, 22))
+            transfer_date = fake.date_between(date(2016, 1, 1), date(2025, 1, 1))
 
         transfer_date = transfer_date.strftime('%Y-%m-%d')
         change_stmt = "UPDATE ASSIGNED_TO SET TILL=%s WHERE ASS_E_ID=%s AND ASS_B_ID=%s"
@@ -534,11 +534,11 @@ if len(result) == 0:
         fake_missions["codename"].append("Case File #" + str(m_names[_]).rjust(5, "0"))
         fake_missions["description"].append(fake.paragraph(nb_sentences=5))
 
-        mission_date = fake.date_between(datetime(2003, 5, 30), datetime.now())
+        mission_date = fake.date_between(datetime(2020, 1, 1), datetime.now())
         fake_missions["m_date"].append(mission_date.strftime('%Y-%m-%d'))
 
         is_ongoing = False
-        if datetime.combine(mission_date, datetime.min.time()) > datetime(2014, 6, 6):
+        if datetime.combine(mission_date, datetime.min.time()) > datetime(2022, 1, 1):
             if random.randint(1, 4) == 4:
                 fake_missions["ongoing"].append(1)
                 is_ongoing = True

@@ -31,13 +31,14 @@ def convert_date_to_datetime(d):
 
 # Fetch and create employees data
 cursor.execute("""
-    SELECT e.*, a.A_ID as agent_id, a.CAPABILITY_LEVEL, t.T_ID as tool_id, t.DESCRIPTION as tool_description, t.AMOUNT as tool_amount, 
+    SELECT e.*, pc.*, a.A_ID as agent_id, a.CAPABILITY_LEVEL, t.T_ID as tool_id, t.DESCRIPTION as tool_description, t.AMOUNT as tool_amount, 
            an.E_ID as analyst_id, an.SPECIALISATION, an.YEARS_OF_EXPERIENCE, at.ASS_B_ID as branch_id, at.SINCE, at.TILL
     FROM EMPLOYEE e
     LEFT JOIN AGENT a ON e.E_ID = a.E_ID
     LEFT JOIN TOOL t ON a.A_ID = t.FK_A_ID
     LEFT JOIN ANALYST an ON e.E_ID = an.E_ID
     LEFT JOIN ASSIGNED_TO at ON e.E_ID = at.ASS_E_ID
+    LEFT JOIN POST_CODE pc ON e.FK_POST_CODE = pc.PC_ID
 """)
 employees = cursor.fetchall()
 
@@ -85,7 +86,12 @@ for employee in employees:
         "email_address": employee['EMAIL_ADDRESS'],
         "street": employee['STREET'],
         "telephone_number": employee['TELEPHONE_NUMBER'],
-        "post_code": employee['FK_POST_CODE'],
+        #"post_code": employee['FK_POST_CODE'],
+        "post_code": {
+            "pc_id": employee['PC_ID'],
+            "post_code": employee['POST_CODE'],
+            "city": employee['CITY']
+        },
         "superior_id": employee['SUPERIOR_FS'],
         "roles": roles,
         "assignments": assignments
@@ -94,7 +100,7 @@ for employee in employees:
 
 # Fetch and create branches data
 cursor.execute("""
-    SELECT B.*, FT.TYPE as facility_type, FT.CAPACITY, PC.CITY as city 
+    SELECT B.*, FT.TYPE as facility_type, FT.CAPACITY, PC.PC_ID, PC.POST_CODE, PC.CITY as CITY 
     FROM BRANCH B 
     LEFT JOIN FACILITY_TYPE FT ON B.FK_TYPE=FT.FT_ID 
     LEFT JOIN POST_CODE PC ON B.FK_POST_CODE=PC.PC_ID
@@ -105,39 +111,19 @@ for branch in branches:
         "branch_id": branch['B_ID'],
         "name": branch['NAME'],
         "street": branch['STREET'],
-        "city": branch['city'],
-        "post_code": branch['FK_POST_CODE'],
+        "post_code": {
+            "pc_id": branch['PC_ID'],
+            "post_code": branch['POST_CODE'],
+            "city": branch['CITY']
+        },
+        #"post_code": branch['FK_POST_CODE'],
         "facility_type": {
             "type_id": branch['FK_TYPE'],
             "type": branch['facility_type'],
             "capacity": branch['CAPACITY']
-        },
-        "location_id": branch['FK_POST_CODE']
+        }
     }
     db.branches.insert_one(doc)
-
-# Fetch and create subjects data
-cursor.execute("SELECT * FROM SUBJECT")
-subjects = cursor.fetchall()
-for subject in subjects:
-    doc = {
-        "subject_id": subject['S_ID'],
-        "first_name": subject['FIRST_NAME'],
-        "last_name": subject['LAST_NAME'],
-        "coi": subject['COI']
-    }
-    db.subjects.insert_one(doc)
-
-# Fetch and create external partners data
-cursor.execute("SELECT * FROM EXTERN_PARTNER")
-partners = cursor.fetchall()
-for partner in partners:
-    doc = {
-        "partner_id": partner['P_ID'],
-        "name": partner['NAME'],
-        "contact": partner['CONTACT']
-    }
-    db.external_partners.insert_one(doc)
 
 # Fetch and create missions data
 cursor.execute("""
@@ -177,15 +163,6 @@ for mission in missions:
         "agents": agents
     }
 
-    # Convert all date fields in the document
-    for key, value in doc.items():
-        if isinstance(value, date):
-            doc[key] = convert_date_to_datetime(value)
-        elif isinstance(value, dict):
-            for sub_key, sub_value in value.items():
-                if isinstance(sub_value, date):
-                    value[sub_key] = convert_date_to_datetime(sub_value)
-
     db.missionlogs.insert_one(doc)
 
 # Create Indexes
@@ -201,10 +178,6 @@ db.missionlogs.create_index("mission_id")
 db.missionlogs.create_index("agents.agent_id")
 db.missionlogs.create_index("date")
 db.missionlogs.create_index("status")
-
-
-db.subjects.create_index("subject_id")
-db.external_partners.create_index("partner_id")
 
 
 cursor.close()

@@ -1,5 +1,7 @@
 <?php
 
+require 'vendor/autoload.php'; 
+
 class DatabaseHelper
 {
     const username = 'root';
@@ -10,7 +12,13 @@ class DatabaseHelper
     const port = '3306';
     const dbname = 'mysql_queensmandb';
 
-    protected $conn;
+    const mongoHost = 'mongodb'; 
+    const mongoPort = '27017';
+    const mongoDbname = 'queensmandb'; 
+
+    protected $conn; #mysql
+    protected $mongoClient;
+    protected $mongoDb;
 
     public function __construct()
     {
@@ -25,6 +33,10 @@ class DatabaseHelper
         if ($this->conn->connect_error) {
             die("DB error: Connection can't be established! " . $this->conn->connect_error);
         }
+
+       $this->mongoClient = new MongoDB\Client("mongodb://" . self::mongoHost . ":" . self::mongoPort);
+       $this->mongoDb = $this->mongoClient->{self::mongoDbname};
+
     }
 
     public function __destruct()

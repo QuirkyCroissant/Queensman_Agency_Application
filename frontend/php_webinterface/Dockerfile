@@ -1,10 +1,32 @@
-FROM php:7.4-apache 
+FROM php:8.0-apache
 
-# installing mysqli extension that is necessary for database connection
-RUN docker-php-ext-install mysqli
+# Update package list and install dependencies
+RUN apt-get update && apt-get install -y \
+    libssl-dev \
+    pkg-config \
+    zip \
+    unzip \
+    git \
+    && docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql \
+    && pecl install mongodb \
+    && docker-php-ext-enable mongodb
 
-COPY . /var/www/html/
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Set working directory
 WORKDIR /var/www/html/
+
+# Copy composer.json and composer.lock (if exists)
+COPY composer.json /var/www/html/
+COPY composer.lock /var/www/html/
+
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
+# Install PHP dependencies
+RUN composer install
+
+# Copy the rest of the application files
+COPY . /var/www/html/
 
 EXPOSE 80

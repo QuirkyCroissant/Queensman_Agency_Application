@@ -268,8 +268,6 @@
                                 <td><?php echo $mission['M_DATE']; ?>  </td>
                                 <td><?php echo $mission['ONGOING']; ?>  </td>
                                 <td><?php echo $mission['STATUS']; ?>  </td>
-                                <td><?php echo $mission['FIRST_NAME']." ".$mission['LAST_NAME']; ?>  </td>
-                                <td><?php echo $mission['COI']; ?>  </td>
                                 <td>
                                     <input name="Mission" class="w3-radio" type="radio" value="<?php echo $mission['M_ID']; ?>">
                                 </td>

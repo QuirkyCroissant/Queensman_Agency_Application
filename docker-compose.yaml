@@ -2,15 +2,19 @@ version: '3'
 services:
 
   frontend:
-    build: ./frontend/php_webinterface
+    build: 
+      context: ./frontend/php_webinterface
+      dockerfile: Dockerfile
     container_name: frontend_php
     ports:
       - "80:80"
     volumes:
       - ./frontend/php_webinterface:/var/www/html
     depends_on:
-      - mysql
-      - mongodb
+      mysql:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
 
   backend:
     build: ./backend/python
@@ -32,6 +36,11 @@ services:
     volumes:
       - ./relational/mysql_scripts:/docker-entrypoint-initdb.d
       - mysqldb:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
 
   mongodb:
     image: mongo:latest
@@ -40,6 +49,7 @@ services:
       - "27017:27017"
     volumes:
       - ./non_relational/mongo_scripts/init:/docker-entrypoint-initdb.d
+      - mongodata:/data/db
 
 networks:
   backend_network:

@@ -548,10 +548,12 @@ if len(result) == 0:
             fake_missions["ongoing"].append(0)
 
         stillgoing_status_list = ["SUCCESSFUL", "FAILED"]
+        succ_rate = [0.7, 0.3]
+
         if is_ongoing:
             fake_missions["status"].append("PENDING")
         else:
-            fake_missions["status"].append(random.choice(stillgoing_status_list))
+            fake_missions["status"].append(random.choices(stillgoing_status_list, succ_rate)[0])
 
         fake_missions["fk_s_id"].append(_ + 1)
         partner_key = random.choice(ex_p_ids)[0]

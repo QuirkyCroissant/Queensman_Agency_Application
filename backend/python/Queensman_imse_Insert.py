@@ -8,11 +8,11 @@ from faker import Faker
 
 username = "root"  # db user name
 password = "Schikuta<3"  # db password
-host = "localhost"  # db host
+host = "mysqldb"  # db host
 database = "mysql_queensmandb"  # db name
 
 # Consider using with to avoid open connections
-connection = mysql.connector.connect(user=username, password=password, host=host, database=database, port=3307)
+connection = mysql.connector.connect(user=username, password=password, host=host, database=database, port=3306)
 curs = connection.cursor()
 
 fake = Faker('en_GB')

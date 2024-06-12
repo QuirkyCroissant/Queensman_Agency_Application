@@ -1,6 +1,5 @@
 version: '3'
 services:
-
   frontend:
     build: 
       context: ./frontend/php_webinterface
@@ -57,4 +56,3 @@ networks:
 volumes:
   mysqldb:
   mongodata:
-    

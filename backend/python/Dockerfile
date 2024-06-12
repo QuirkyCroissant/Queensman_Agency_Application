@@ -4,10 +4,13 @@ WORKDIR /backend
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
+RUN apt-get update && apt-get install -y default-mysql-client
 
 COPY . .
-COPY wait-for-it.sh /backend/
+COPY entrypoint.sh /backend/
+
+RUN chmod +x /backend/entrypoint.sh
 
 EXPOSE 5000
 
-CMD ["./wait-for-it.sh", "mysqldb", "--", "python3", "Queensman_imse_Insert.py"]
+CMD ["/backend/entrypoint.sh"]

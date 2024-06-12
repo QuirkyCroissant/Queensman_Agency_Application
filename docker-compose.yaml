@@ -21,6 +21,8 @@ services:
     depends_on:
       - mysql
       - mongodb
+    volumes:
+      - ./relational/mysql_scripts:/backend/relational/mysql_scripts
 
   mysql:
     image: mysql:8.0

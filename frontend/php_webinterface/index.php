@@ -47,13 +47,19 @@
     {
         $m_id = $_POST['Mission'];
         $assigned_agents = $database->selectAgentsAssignedToMission($m_id);
-        $assigned_agent_ids = array_column($assigned_agents, 'A_ID');
+        if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) {
+            $assigned_agent_ids = array_column($assigned_agents, 'agent_id');
+        } else {
+            $assigned_agent_ids = array_column($assigned_agents, 'A_ID');
+        }
     }
 
     if (isset($_POST['bt_migrateToMongo'])) {
+        $_SESSION['use_mongodb'] = true;
         echo "Hallo there";
         // Execute the Python script for migration
         $output = shell_exec('python3 /var/www/html/scripts/mongo_insert.py');
+
         echo "<pre>$output</pre>";
     }
 ?>
@@ -271,18 +277,38 @@
                         </tr>
                         <?php foreach ($missions_list as $mission) : ?>
                             <tr>
-                                <td><?php echo $mission['M_ID']; ?>  </td>
-                                <td><?php echo $mission['CODENAME']; ?>  </td>
-                                <!-- <td><?php //echo $mission['DESCRIPTION']; ?>  </td> -->
-                                <td><?php echo $mission['M_DATE']; ?>  </td>
-                                <td><?php echo $mission['ONGOING']; ?>  </td>
-                                <td><?php echo $mission['STATUS']; ?>  </td>
-                                <td>
-                                    <input name="Mission" class="w3-radio" type="radio" value="<?php echo $mission['M_ID']; ?>">
-                                </td>
-                                
+                                <?php if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) : ?>
+                                    <td><?php echo $mission['mission_id']; ?></td>
+                                    <td><?php echo $mission['codename']; ?></td>
+                                    <!-- <td><?php //echo $mission['description']; ?></td> -->
+                                    <td>
+                                        <?php 
+                                        if (isset($mission['date']['$date']['$numberLong'])) {
+                                            $timestamp = (int) ($mission['date']['$date']['$numberLong'] / 1000); // Convert milliseconds to seconds -->
+                                            echo date('Y-m-d', $timestamp);
+                                        } else {
+                                            echo '';
+                                        }
+                                        ?>
+                                    </td>
+                                    <td><?php echo $mission['ongoing']; ?></td>
+                                    <td><?php echo $mission['status']; ?></td>
+                                    <td>
+                                        <input name="Mission" class="w3-radio" type="radio" value="<?php echo $mission['mission_id']; ?>">
+                                    </td>
+                                <?php else : ?>
+                                    <td><?php echo $mission['M_ID']; ?></td>
+                                    <td><?php echo $mission['CODENAME']; ?></td>
+                                    <!-- <td><?php //echo $mission['DESCRIPTION']; ?></td> -->
+                                    <td><?php echo $mission['M_DATE']; ?></td>
+                                    <td><?php echo $mission['ONGOING']; ?></td>
+                                    <td><?php echo $mission['STATUS']; ?></td>
+                                    <td>
+                                        <input name="Mission" class="w3-radio" type="radio" value="<?php echo $mission['M_ID']; ?>">
+                                    </td>
+                                <?php endif; ?>
                             </tr>
-                            <?php endforeach; ?>
+                        <?php endforeach; ?>
                             <tr>
                                 <td colspan="6" style="text-align:center;">
                                     <button name="bt_selectMission" type="submit" value="Show available Agents">Show available Agents</button>
@@ -300,16 +326,17 @@
                                 <th>SELECT AGENTS</th>
                             </tr>
                             <?php foreach ($agents_array as $agent) : ?>
-                                <tr>
-                                    <td>
-                                        <?php if (!in_array($agent['A_ID'], $assigned_agent_ids)) : ?>
-                                            <input type="checkbox" name="agents[]" value="<?php echo $agent['A_ID']; ?>">
-                                        <?php else : ?>
-                                            <input type="checkbox" name="agents[]" value="<?php echo $agent['A_ID']; ?>" checked>
-                                        <?php endif; ?>
+                            <tr>
+                                <td>
+                                    <?php if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) : ?>
+                                        <input type="checkbox" name="agents[]" value="<?php echo $agent['agent_id']; ?>" <?php echo in_array($agent['agent_id'], $assigned_agent_ids) ? 'checked' : ''; ?>>
+                                        <?php echo $agent['first_name'] . ' ' . $agent['last_name']; ?>
+                                    <?php else : ?>
+                                        <input type="checkbox" name="agents[]" value="<?php echo $agent['A_ID']; ?>" <?php echo in_array($agent['A_ID'], $assigned_agent_ids) ? 'checked' : ''; ?>>
                                         <?php echo $agent['FIRST_NAME'] . ' ' . $agent['LAST_NAME']; ?>
-                                    </td>
-                                </tr>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
                             <?php endforeach; ?>
                             <tr>
                                 <td colspan="6" style="text-align:center;">
@@ -325,14 +352,25 @@
                                     <th>Succ. Missions</th>
                                     <th>Succ. Missions on uniq. Subj.</th>
                                 </tr>
-                                <?php foreach ($successful_agents as $agent) : ?>
-                                    <tr>
-                                        <td><?php echo $agent['A_ID']; ?></td>
-                                        <td><?php echo $agent['LAST_NAME']; ?></td>
-                                        <td><?php echo $agent['successful_missions']; ?></td>
-                                        <td><?php echo $agent['successful_missions_unique_subjects']; ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
+                                <?php if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) : ?>
+                                    <?php foreach ($successful_agents as $agent) : ?>
+                                        <tr>
+                                            <td><?php echo $agent['agent_id']; ?></td>
+                                            <td><?php echo $agent['last_name']; ?></td> <!-- TODO LASTNAME -->
+                                            <td><?php echo $agent['successful_missions']; ?></td>
+                                            <td><?php echo $agent['successful_missions_unique_subjects']; ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else : ?>
+                                    <?php foreach ($successful_agents as $agent) : ?>
+                                        <tr>
+                                            <td><?php echo $agent['A_ID']; ?></td>
+                                            <td><?php echo $agent['LAST_NAME']; ?></td>
+                                            <td><?php echo $agent['successful_missions']; ?></td>
+                                            <td><?php echo $agent['successful_missions_unique_subjects']; ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             <?php } ?>        
                     
                     </table>

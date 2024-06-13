@@ -312,7 +312,28 @@ class DatabaseHelper
 
     //################USECASE1################
     public function selectAllMissions()
-    {
+    {   
+        if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) {
+            $collection = $this->mongoDb->missionlogs;
+            $pipeline = [
+                [
+                    '$project' => [
+                        'mission_id' => '$mission_id',
+                        'codename' => '$codename',
+                        'description' => '$description',
+                        'date' => '$date',
+                        'ongoing' => '$ongoing',
+                        'status' => '$status'
+                    ]
+                ]
+            ];
+    
+            $result = $collection->aggregate($pipeline)->toArray();
+            return json_decode(json_encode($result), true); // Convert BSON to array
+        }
+        else {
+
+    
         $sql = "SELECT m.M_ID, m.CODENAME, m.DESCRIPTION, m.M_DATE, m.ONGOING, m.STATUS FROM MISSIONLOG m";
 
         $result = $this->conn->query($sql);
@@ -321,10 +342,35 @@ class DatabaseHelper
         $result->free();
 
         return $res;
+        }
     }
 
     public function selectAgentsAssignedToMission($m_id)
-    {
+    {   
+        if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) {
+            $collection = $this->mongoDb->missionlogs;
+            
+            $pipeline = [
+                ['$match' => ['mission_id' => $m_id]],
+                ['$unwind' => '$agents'],
+                ['$lookup' => [
+                    'from' => 'employees',
+                    'localField' => 'agents.agent_id',
+                    'foreignField' => 'employee_id',
+                    'as' => 'agent_info'
+                ]],
+                ['$unwind' => '$agent_info'],
+                ['$project' => [
+                    'agent_id' => '$agents.agent_id',
+                    'first_name' => '$agent_info.first_name',
+                    'last_name' => '$agent_info.last_name'
+                ]]
+            ];
+    
+            $result = $collection->aggregate($pipeline)->toArray();
+            return json_decode(json_encode($result), true);
+        }
+        else {
         $sql = "SELECT a.A_ID, e.FIRST_NAME, e.LAST_NAME FROM AGENT a JOIN TAKES_ON t ON a.A_ID = t.FK_A_ID JOIN EMPLOYEE e ON a.E_ID = e.E_ID WHERE t.FK_M_ID = ?";
 
         $stmt = $this->conn->prepare($sql);
@@ -336,9 +382,29 @@ class DatabaseHelper
         $stmt->close();
 
         return $res;
+        }
     }
 
     public function assignAgentsToMission($m_id, $agent_ids) {
+        if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) {
+            $collection = $this->mongoDb->missionlogs;
+            
+            // Delete existing agents for the mission
+            $collection->updateOne(
+                ['mission_id' => $m_id],
+                ['$set' => ['agents' => []]]
+            );
+    
+            // Add the new agents
+            foreach ($agent_ids as $agent_id) {
+                $collection->updateOne(
+                    ['mission_id' => $m_id],
+                    ['$push' => ['agents' => ['agent_id' => $agent_id, 'role' => 'Assigned']]]
+                );
+            }
+            return true;
+        }   
+        else {
         $sql_delete = "DELETE FROM TAKES_ON WHERE FK_M_ID = ?";
         $stmt_delete = $this->conn->prepare($sql_delete);
         $stmt_delete->bind_param('i', $m_id);
@@ -353,32 +419,100 @@ class DatabaseHelper
             $stmt_insert->close();
         }
         return true;
+        }
     }
     //################USECASE1END################
 
     #####REPORT#####
     public function getSuccessfulAgentsReport() {
-        $sql = "
-            SELECT 
-                a.A_ID, 
-                e.LAST_NAME, 
-                COUNT(m.M_ID) AS successful_missions, 
-                COUNT(DISTINCT m.FK_S_ID) AS successful_missions_unique_subjects
-            FROM 
-                AGENT a
-            JOIN 
-                EMPLOYEE e ON a.E_ID = e.E_ID
-            LEFT JOIN 
-                TAKES_ON t ON a.A_ID = t.FK_A_ID
-            LEFT JOIN 
-                MISSIONLOG m ON t.FK_M_ID = m.M_ID AND m.STATUS = 'SUCCESSFUL' AND m.M_DATE >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
-            GROUP BY 
-                a.A_ID, e.LAST_NAME
-            ORDER BY 
-                successful_missions_unique_subjects DESC, successful_missions DESC";
-    
-        $result = $this->conn->query($sql);
-        return $result->fetch_all(MYSQLI_ASSOC);
+        if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb'])
+        {   
+            $collection = $this->mongoDb->missionlogs;
+
+        $pipeline = [
+            [
+                '$match' => [
+                    'status' => 'SUCCESSFUL',
+                    'date' => [
+                        '$gte' => new MongoDB\BSON\UTCDateTime(strtotime('-1 year') * 1000)
+                    ]
+                ]
+            ],
+            [
+                '$unwind' => '$agents'
+            ],
+            [
+                '$group' => [
+                    '_id' => [
+                        'agent_id' => '$agents.agent_id'
+                    ],
+                    'total_successful_missions' => ['$sum' => 1],
+                    'unique_subjects' => ['$addToSet' => '$subject.subject_id']
+                ]
+            ],
+            [
+                '$lookup' => [
+                    'from' => 'employees',
+                    'localField' => '_id.agent_id',
+                    'foreignField' => 'roles.agent_id',
+                    'as' => 'agent_info'
+                ]
+            ],
+            [
+                '$unwind' => '$agent_info'
+            ],
+            [
+                '$group' => [
+                    '_id' => [
+                        'agent_id' => '$_id.agent_id',
+                        'last_name' => '$agent_info.last_name'
+                    ],
+                    'successful_missions' => ['$first' => '$total_successful_missions'],
+                    'successful_missions_unique_subjects' => ['$first' => ['$size' => '$unique_subjects']]
+                ]
+            ],
+            [
+                '$project' => [
+                    'agent_id' => '$_id.agent_id',
+                    'last_name' => '$_id.last_name',
+                    'successful_missions' => 1,
+                    'successful_missions_unique_subjects' => 1
+                ]
+            ],
+            [
+                '$sort' => [
+                    'successful_missions_unique_subjects' => -1,
+                    'successful_missions' => -1
+                ]
+            ]
+        ];
+
+        $result = $collection->aggregate($pipeline)->toArray();
+        return json_decode(json_encode($result), true); // Convert BSON to array
+        }
+        else {
+            $sql = "
+                SELECT 
+                    a.A_ID, 
+                    e.LAST_NAME, 
+                    COUNT(m.M_ID) AS successful_missions, 
+                    COUNT(DISTINCT m.FK_S_ID) AS successful_missions_unique_subjects
+                FROM 
+                    AGENT a
+                JOIN 
+                    EMPLOYEE e ON a.E_ID = e.E_ID
+                LEFT JOIN 
+                    TAKES_ON t ON a.A_ID = t.FK_A_ID
+                LEFT JOIN 
+                    MISSIONLOG m ON t.FK_M_ID = m.M_ID AND m.STATUS = 'SUCCESSFUL' AND m.M_DATE >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+                GROUP BY 
+                    a.A_ID, e.LAST_NAME
+                ORDER BY 
+                    successful_missions_unique_subjects DESC, successful_missions DESC";
+        
+            $result = $this->conn->query($sql);
+            return $result->fetch_all(MYSQLI_ASSOC);
+        }
     }
     #####REPORTEND##
 

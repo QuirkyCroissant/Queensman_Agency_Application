@@ -42,7 +42,7 @@
         exit;
     }
 
-    $assigned_agent_ids = []; // Initialize as an empty array
+    $assigned_agent_ids = [];
     if (isset($_POST['Mission']) && isset($_POST['bt_selectMission'])) 
     {
         $m_id = $_POST['Mission'];
@@ -343,8 +343,8 @@
                             <tr>
                                 <td>
                                     <?php if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) : ?>
-                                        <input type="checkbox" name="agents[]" value="<?php echo $agent['agent_id']; ?>" <?php echo in_array($agent['agent_id'], $assigned_agent_ids) ? 'checked' : ''; ?>>
-                                        <?php echo $agent['first_name'] . ' ' . $agent['last_name']; ?>
+                                        <input type="checkbox" name="agents[]" value="<?php echo $agent['A_ID']; ?>">
+                                        <?php echo $agent['FIRST_NAME'] . ' ' . $agent['LAST_NAME']; ?>
                                     <?php else : ?>
                                         <input type="checkbox" name="agents[]" value="<?php echo $agent['A_ID']; ?>" <?php echo in_array($agent['A_ID'], $assigned_agent_ids) ? 'checked' : ''; ?>>
                                         <?php echo $agent['FIRST_NAME'] . ' ' . $agent['LAST_NAME']; ?>

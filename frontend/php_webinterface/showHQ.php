@@ -219,7 +219,7 @@ if (isset($_POST['bt_fillRelDatabase'])) {
         document.addEventListener("DOMContentLoaded", function() {
             var element = document.querySelector('.highlight');
             if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element.scrollIntoView({ behavior: 'instant', block: 'center' });
             }
 
             var modal = document.getElementById("assignModal");

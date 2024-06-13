@@ -67,55 +67,130 @@ class DatabaseHelper
         return $res;
 
     }
-
+    ### usecase 2 (main) - assign employee to branch ###
     public function selectBranches() {
-        $sql = "SELECT B_ID, NAME FROM BRANCH";
-        $result = $this->conn->query($sql);
-        return $result->fetch_all(MYSQLI_ASSOC);
+        if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) {
+            $collection = $this->mongoDb->branches;
+            $cursor = $collection->find(
+                [],
+                [
+                    'projection' => [
+                        'branch_id' => 1,
+                        'name' => 1
+                    ]
+                ]
+            );
+            $result = iterator_to_array($cursor);
+            return array_map(function($branch) {
+                return [
+                    'B_ID' => $branch['branch_id'],
+                    'NAME' => $branch['name']
+                ];
+            }, $result);
+        }else{
+            $sql = "SELECT B_ID, NAME FROM BRANCH";
+            $result = $this->conn->query($sql);
+            return $result->fetch_all(MYSQLI_ASSOC);
+        }
     }
 
     public function assignEmployeeToBranch($e_id, $b_id, $since, $till) {
-        // retrieves latest assignment for the employee
-        $sql = "SELECT MAX(SINCE) AS last_since FROM ASSIGNED_TO WHERE ASS_E_ID = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('i', $e_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $last_assignment = $result->fetch_assoc();
-        $stmt->close();
+        if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) {
+            $collection = $this->mongoDb->employees;
 
-        if ($last_assignment) {
-            $last_since = $last_assignment['last_since'];
+            // Convert date to MongoDB Date
+            $since_date = new MongoDB\BSON\UTCDateTime(strtotime($since) * 1000);
+            $till_date = $till ? new MongoDB\BSON\UTCDateTime(strtotime($till) * 1000) : null;
 
-            // New assignment date must be later than the previous assignment! -> return false
-            if ($since <= $last_since) {
-                return false; 
+            // Retrieve the latest assignment for the employee
+            $last_assignment = $collection->aggregate([
+                [ '$match' => ['employee_id' => (int) $e_id] ],
+                [ '$unwind' => '$assignments' ],
+                [ '$sort' => ['assignments.since' => -1] ],
+                [ '$limit' => 1 ],
+                [ '$project' => ['last_since' => '$assignments.since'] ]
+            ])->toArray();
+
+            if (!empty($last_assignment)) {
+                $last_since = $last_assignment[0]['last_since'];
+
+                // New assignment date must be later than the previous assignment
+                if ($since_date <= $last_since) {
+                    return false;
+                }
+
+                // Update the previous assignment's "TILL" field
+                $collection->updateOne(
+                    [
+                        'employee_id' => (int) $e_id,
+                        'assignments.since' => $last_since
+                    ],
+                    [
+                        '$set' => ['assignments.$.till' => $since_date]
+                    ]
+                );
             }
 
-            // Updating the previous assignments "TILL" field
-            $sql = "UPDATE ASSIGNED_TO SET TILL = ? WHERE ASS_E_ID = ? AND TILL IS NULL";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param('si', $since, $e_id);
-            $stmt->execute();
-            $stmt->close();
-        }
+            // Prepare the new assignment
+            $new_assignment = [
+                'branch_id' => (int) $b_id,
+                'since' => $since_date
+            ];
+            if ($till_date) {
+                $new_assignment['till'] = $till_date;
+            }
 
-        // finally insert the new assignment
-        // if we already get a termination date in "till" we add it to the insert
-        if($till != null){
-            $sql = "INSERT INTO ASSIGNED_TO (ASS_E_ID, ASS_B_ID, SINCE, TILL) VALUES (?, ?, ?, ?)";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param('iiss', $e_id, $b_id, $since, $till);
+            // Insert the new assignment
+            $result = $collection->updateOne(
+                ['employee_id' => (int) $e_id],
+                ['$push' => ['assignments' => $new_assignment]]
+            );
+
+            return $result->getModifiedCount() > 0;
+
         } else {
-            $sql = "INSERT INTO ASSIGNED_TO (ASS_E_ID, ASS_B_ID, SINCE) VALUES (?, ?, ?)";
+            // retrieves latest assignment for the employee
+            $sql = "SELECT MAX(SINCE) AS last_since FROM ASSIGNED_TO WHERE ASS_E_ID = ?";
             $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param('iis', $e_id, $b_id, $since);
-        }
-        
-        $success = $stmt->execute();
-        $stmt->close();
+            $stmt->bind_param('i', $e_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $last_assignment = $result->fetch_assoc();
+            $stmt->close();
 
-        return $success;
+            if ($last_assignment) {
+                $last_since = $last_assignment['last_since'];
+
+                // New assignment date must be later than the previous assignment! -> return false
+                if ($since <= $last_since) {
+                    return false; 
+                }
+
+                // Updating the previous assignments "TILL" field
+                $sql = "UPDATE ASSIGNED_TO SET TILL = ? WHERE ASS_E_ID = ? AND TILL IS NULL";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param('si', $since, $e_id);
+                $stmt->execute();
+                $stmt->close();
+            }
+
+            // finally insert the new assignment
+            // if we already get a termination date in "till" we add it to the insert
+            if($till != null){
+                $sql = "INSERT INTO ASSIGNED_TO (ASS_E_ID, ASS_B_ID, SINCE, TILL) VALUES (?, ?, ?, ?)";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param('iiss', $e_id, $b_id, $since, $till);
+            } else {
+                $sql = "INSERT INTO ASSIGNED_TO (ASS_E_ID, ASS_B_ID, SINCE) VALUES (?, ?, ?)";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param('iis', $e_id, $b_id, $since);
+            }
+            
+            $success = $stmt->execute();
+            $stmt->close();
+
+            return $success;
+        }
     }
 
     ######## data analytics - Employee Assignments ########
@@ -448,14 +523,14 @@ class DatabaseHelper
     {   
         if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) {
             $collection = $this->mongoDb->missionlogs;
-            
+        
             $pipeline = [
                 ['$match' => ['mission_id' => $m_id]],
                 ['$unwind' => '$agents'],
                 ['$lookup' => [
                     'from' => 'employees',
                     'localField' => 'agents.agent_id',
-                    'foreignField' => 'employee_id',
+                    'foreignField' => 'employee_id', 
                     'as' => 'agent_info'
                 ]],
                 ['$unwind' => '$agent_info'],
@@ -465,7 +540,7 @@ class DatabaseHelper
                     'last_name' => '$agent_info.last_name'
                 ]]
             ];
-    
+
             $result = $collection->aggregate($pipeline)->toArray();
             return json_decode(json_encode($result), true);
         }

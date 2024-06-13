@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: frontend_php
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - ./frontend/php_webinterface:/var/www/html
       - ./non_relational/mongo_scripts/init/:/var/www/html/scripts
@@ -15,7 +15,7 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_started
-      networks:
+    networks:
       - backend_network
 
   backend:
@@ -62,19 +62,19 @@ services:
     networks:
       - backend_network
 
-    nginx:
-      build:
-        context: ./nginx
-        dockerfile: Dockerfile
-      container_name: nginx
-      ports:
-        - "443:443"
-        - "80:80"
-      depends_on:
-        - frontend
-        - backend
-      networks:
-        - backend_network
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    ports:
+      - "443:443"
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - backend_network
 
 networks:
   backend_network:

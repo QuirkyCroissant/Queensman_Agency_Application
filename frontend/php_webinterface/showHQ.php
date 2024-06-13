@@ -33,7 +33,6 @@ if (isset($_GET['bt_superior'])) {
 
 if (isset($_POST['bt_migrateToMongo'])) {
     $_SESSION['use_mongodb'] = true;
-    echo "Hallo there";
     // Execute the Python script for migration
     $output = shell_exec('python3 /var/www/html/scripts/mongo_insert.py');
 

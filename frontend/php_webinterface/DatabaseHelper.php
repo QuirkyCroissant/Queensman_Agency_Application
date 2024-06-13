@@ -269,88 +269,237 @@ class DatabaseHelper
     }
 
     public function getSuperiorAndTeam($e_id) {
-        // Query to get the superior of the employee
-        $sql = "SELECT s.E_ID as SUPERIOR_ID, s.FIRST_NAME as SUPERIOR_FIRST_NAME, s.LAST_NAME as SUPERIOR_LAST_NAME
-                FROM EMPLOYEE e
-                JOIN EMPLOYEE s ON e.SUPERIOR_FS = s.E_ID
-                WHERE e.E_ID = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('i', $e_id);
-        $stmt->execute();
-        $superior_result = $stmt->get_result();
-        $superior_info = $superior_result->fetch_assoc();
-        $stmt->close();
-
-        // Query to get the team members of the employee
-        $sql = "SELECT E_ID, FIRST_NAME, LAST_NAME
-                FROM EMPLOYEE
-                WHERE SUPERIOR_FS = (SELECT SUPERIOR_FS FROM EMPLOYEE WHERE E_ID = ?) AND E_ID NOT LIKE ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('ii', $e_id, $e_id);
-        $stmt->execute();
-        $team_result = $stmt->get_result();
-        $team_info = $team_result->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
-
-        return ['superior' => $superior_info, 'team' => $team_info];
+        if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) {
+            $collection = $this->mongoDb->employees;
+    
+            // Query to get the superior of the employee
+            $employee = $collection->findOne(
+                ['employee_id' => (int) $e_id], 
+                ['projection' => ['superior_id' => 1]]
+            );
+    
+            $superior_info = null;
+            if ($employee && isset($employee['superior_id'])) {
+                $superior_id = $employee['superior_id'];
+                $superior_info = $collection->findOne(
+                    ['employee_id' => $superior_id], 
+                    ['projection' => [
+                        'employee_id' => 1,
+                        'first_name' => 1,
+                        'last_name' => 1
+                    ]]
+                );
+            }
+    
+            // Query to get the team members of the employee
+            $team_info = [];
+            if ($employee && isset($employee['superior_id'])) {
+                $team_info = $collection->find(
+                    [
+                        'superior_id' => $employee['superior_id'],
+                        'employee_id' => ['$ne' => (int) $e_id]
+                    ], 
+                    ['projection' => [
+                        'employee_id' => 1,
+                        'first_name' => 1,
+                        'last_name' => 1
+                    ]]
+                )->toArray();
+            }
+    
+            return [
+                'superior' => $superior_info ? [
+                    'SUPERIOR_ID' => $superior_info['employee_id'],
+                    'SUPERIOR_FIRST_NAME' => $superior_info['first_name'],
+                    'SUPERIOR_LAST_NAME' => $superior_info['last_name']
+                ] : null,
+                'team' => array_map(function ($team_member) {
+                    return [
+                        'E_ID' => $team_member['employee_id'],
+                        'FIRST_NAME' => $team_member['first_name'],
+                        'LAST_NAME' => $team_member['last_name']
+                    ];
+                }, $team_info)
+            ];
+        } else {
+            // Query to get the superior of the employee
+            $sql = "SELECT s.E_ID as SUPERIOR_ID, s.FIRST_NAME as SUPERIOR_FIRST_NAME, s.LAST_NAME as SUPERIOR_LAST_NAME
+                    FROM EMPLOYEE e
+                    JOIN EMPLOYEE s ON e.SUPERIOR_FS = s.E_ID
+                    WHERE e.E_ID = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param('i', $e_id);
+            $stmt->execute();
+            $superior_result = $stmt->get_result();
+            $superior_info = $superior_result->fetch_assoc();
+            $stmt->close();
+    
+            // Query to get the team members of the employee
+            $sql = "SELECT E_ID, FIRST_NAME, LAST_NAME
+                    FROM EMPLOYEE
+                    WHERE SUPERIOR_FS = (SELECT SUPERIOR_FS FROM EMPLOYEE WHERE E_ID = ?) AND E_ID NOT LIKE ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param('ii', $e_id, $e_id);
+            $stmt->execute();
+            $team_result = $stmt->get_result();
+            $team_info = $team_result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+    
+            return ['superior' => $superior_info, 'team' => $team_info];
+        }
     }
+    
+
 
     public function selectAllEmployeesMinusE_ID($e_id){
-        $sql = "SELECT * FROM EMPLOYEE WHERE E_ID != ?";
-        $stmt = $this->conn->prepare($sql);
-        if ($stmt === false) {
-            die("Error preparing statement: " . $this->conn->error);
-        }
-        $stmt->bind_param('i', $e_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $res = $result->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
+        if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) {
+            $collection = $this->mongoDb->employees;
+    
+            // Query to select all employees except the one with the given employee ID
+            $result = $collection->find(
+                ['employee_id' => ['$ne' => (int) $e_id]]
+            )->toArray();
+    
+            // Converting result to the expected format
+            $res = array_map(function($employee) {
+                return [
+                    'E_ID' => $employee['employee_id'],
+                    'FIRST_NAME' => $employee['first_name'],
+                    'LAST_NAME' => $employee['last_name'],
+                    'EMAIL_ADDRESS' => $employee['email_address'],
+                    'STREET' => $employee['street'],
+                    'TELEPHONE_NUMBER' => $employee['telephone_number'],
+                    'POST_CODE' => $employee['post_code'],
+                    'SUPERIOR_FS' => $employee['superior_id'],
+                    'roles' => $employee['roles'],
+                    'assignments' => $employee['assignments']
+                ];
+            }, $result);
+    
+            return $res;
+        } else {
+            $sql = "SELECT * FROM EMPLOYEE WHERE E_ID != ?";
+            $stmt = $this->conn->prepare($sql);
+            if ($stmt === false) {
+                die("Error preparing statement: " . $this->conn->error);
+            }
+            $stmt->bind_param('i', $e_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $res = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
 
-        return $res;
+            return $res;
+        }
     }
 
     public function selectTeamMembers($e_id) {
-        // get the SUPERIOR_FS value for the given employee
-        $sql = "SELECT SUPERIOR_FS FROM EMPLOYEE WHERE E_ID = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('i', $e_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $superior_fs = $result->fetch_assoc()['SUPERIOR_FS'];
-        $stmt->close();
+        if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) {
+            $collection = $this->mongoDb->employees;
     
-        // Then get the team members who have the same boss
-        $sql = "SELECT E_ID, FIRST_NAME, LAST_NAME
-                FROM EMPLOYEE
-                WHERE SUPERIOR_FS = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('i', $superior_fs);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $team = $result->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
+            // Get the superior_id value for the given employee
+            $superior_fs = $collection->findOne(
+                ['employee_id' => (int) $e_id],
+                ['projection' => ['superior_id' => 1]]
+            )['superior_id'];
     
-        return $team;
+            if ($superior_fs === null) {
+                return [];
+            }
+    
+            // Get the team members who have the same boss
+            $result = $collection->find(
+                ['superior_id' => $superior_fs],
+                ['projection' => ['employee_id' => 1, 'first_name' => 1, 'last_name' => 1]]
+            )->toArray();
+    
+            // Converting result to the expected format
+            $team = array_map(function($employee) {
+                return [
+                    'E_ID' => $employee['employee_id'],
+                    'FIRST_NAME' => $employee['first_name'],
+                    'LAST_NAME' => $employee['last_name']
+                ];
+            }, $result);
+    
+            return $team;
+    
+        } else {
+            // get the SUPERIOR_FS value for the given employee
+            $sql = "SELECT SUPERIOR_FS FROM EMPLOYEE WHERE E_ID = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param('i', $e_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $superior_fs = $result->fetch_assoc()['SUPERIOR_FS'];
+            $stmt->close();
+        
+            // Then get the team members who have the same boss
+            $sql = "SELECT E_ID, FIRST_NAME, LAST_NAME
+                    FROM EMPLOYEE
+                    WHERE SUPERIOR_FS = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param('i', $superior_fs);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $team = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+        
+            return $team;
+        }
     }
     
 
     public function updateTeamMembers($e_id, $team_members) {
-        // First, reset all team members of the current employee
-        $sql = "UPDATE EMPLOYEE SET SUPERIOR_FS = NULL WHERE SUPERIOR_FS = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('i', $e_id);
-        $stmt->execute();
-        $stmt->close();
+        if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) {
+            $collection = $this->mongoDb->employees;
+    
+            // Convert employee ID to integer
+            $e_id = (int) $e_id;
+    
+            // First, reset all team members of the current employee
+            $collection->updateMany(
+                ['superior_id' => $e_id],
+                ['$set' => ['superior_id' => null]]
+            );
 
-        // Then, update the selected team members
-        if (!empty($team_members)) {
-            foreach ($team_members as $member_id) {
-                $sql = "UPDATE EMPLOYEE SET SUPERIOR_FS = ? WHERE E_ID = ?";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bind_param('ii', $e_id, $member_id);
-                $stmt->execute();
-                $stmt->close();
+            $collection->updateOne(
+                ['employee_id' => $e_id],
+                ['$set' => ['superior_id' => null]]
+            );
+
+            // Then, update the selected team members
+            if (!empty($team_members)) {
+                // Ensure all IDs are integers
+                $team_members = array_map('intval', $team_members); 
+                $collection->updateMany(
+                    ['employee_id' => ['$in' => $team_members]],
+                    ['$set' => ['superior_id' => $e_id]]
+                );
+            }
+        } else {
+            // First, reset all team members of the current employee
+            $sql = "UPDATE EMPLOYEE SET SUPERIOR_FS = NULL WHERE SUPERIOR_FS = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param('i', $e_id);
+            $stmt->execute();
+            $stmt->close();
+
+            $sql = "UPDATE EMPLOYEE SET SUPERIOR_FS = NULL WHERE E_ID = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param('i', $e_id);
+            $stmt->execute();
+            $stmt->close();
+
+            // Then, update the selected team members
+            if (!empty($team_members)) {
+                foreach ($team_members as $member_id) {
+                    $sql = "UPDATE EMPLOYEE SET SUPERIOR_FS = ? WHERE E_ID = ?";
+                    $stmt = $this->conn->prepare($sql);
+                    $stmt->bind_param('ii', $e_id, $member_id);
+                    $stmt->execute();
+                    $stmt->close();
+                }
             }
         }
     }

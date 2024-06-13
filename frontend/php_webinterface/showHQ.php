@@ -44,7 +44,6 @@ if (isset($_POST['bt_fillRelDatabase'])) {
     // Execute the Python script for migration
     $database->RefillDatabase();
 }
-
 ?>
 
 <html>
@@ -57,7 +56,7 @@ if (isset($_POST['bt_fillRelDatabase'])) {
 <body class="showHQ">
     <div class="masterdiv">
         <div class="header_div" style="margin-top: 0; background: 000;">
-        <table style="width: 100%; border-collapse: collapse;">
+            <table style="width: 100%; border-collapse: collapse;">
                 <tr>
                     <td style="width: 33.33%;">
                         <div style="display: flex; align-items: center;">
@@ -176,22 +175,28 @@ if (isset($_POST['bt_fillRelDatabase'])) {
                     <?php endforeach; ?>
                 <?php endif; ?>
 
-                <?php if (isset($superior_info)) : ?>
+                <?php if (isset($superior_info) || isset($team_info)) : ?>
                     <tr>
                         <th>&nbsp;</th>
                         <th>Employee #<?php echo $e_id ?></th>
-                        <th><button type="button" class="promote-btn" data-employee-id="<?php echo $e_id; ?>">Promote Employee</button></tr>
+                        <th><button type="button" class="promote-btn" data-employee-id="<?php echo $e_id; ?>">Promote Employee</button></th>
                     </tr>
-                    <tr>
-                        <th>SUPERIOR ID</th>
-                        <th>FIRST NAME</th>
-                        <th>LAST NAME</th>
-                    </tr>
-                    <tr>
-                        <td><?php echo $superior_info['SUPERIOR_ID']; ?></td>
-                        <td><?php echo $superior_info['SUPERIOR_FIRST_NAME']; ?></td>
-                        <td><?php echo $superior_info['SUPERIOR_LAST_NAME']; ?></td>
-                    </tr>
+                    <?php if ($superior_info) : ?>
+                        <tr>
+                            <th>SUPERIOR ID</th>
+                            <th>FIRST NAME</th>
+                            <th>LAST NAME</th>
+                        </tr>
+                        <tr>
+                            <td><?php echo $superior_info['SUPERIOR_ID']; ?></td>
+                            <td><?php echo $superior_info['SUPERIOR_FIRST_NAME']; ?></td>
+                            <td><?php echo $superior_info['SUPERIOR_LAST_NAME']; ?></td>
+                        </tr>
+                    <?php else : ?>
+                        <tr>
+                            <td colspan="3">No superior assigned.</td>
+                        </tr>
+                    <?php endif; ?>
                     <tr>
                         <th>&nbsp;</th>
                         <th>Team Members</th>
@@ -202,14 +207,19 @@ if (isset($_POST['bt_fillRelDatabase'])) {
                         <th>FIRST NAME</th>
                         <th>LAST NAME</th>
                     </tr>
-                    <?php foreach ($team_info as $member) : ?>
+                    <?php if (!empty($team_info)) : ?>
+                        <?php foreach ($team_info as $member) : ?>
+                            <tr>
+                                <td><?php echo $member['E_ID']; ?></td>
+                                <td><?php echo $member['FIRST_NAME']; ?></td>
+                                <td><?php echo $member['LAST_NAME']; ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else : ?>
                         <tr>
-                            <td><?php echo $member['E_ID']; ?></td>
-                            <td><?php echo $member['FIRST_NAME']; ?></td>
-                            <td><?php echo $member['LAST_NAME']; ?></td>
+                            <td colspan="3">No team members assigned.</td>
                         </tr>
-                    <?php endforeach; ?>
-                    
+                    <?php endif; ?>
                 <?php endif; ?>
             </table>
         </div>

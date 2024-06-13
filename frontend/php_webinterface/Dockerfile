@@ -34,4 +34,8 @@ COPY . /var/www/html/
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
+COPY Queensman_imse_Insert.py .
+COPY requirements_refill.txt .
+RUN pip install -r requirements_refill.txt
+
 EXPOSE 80

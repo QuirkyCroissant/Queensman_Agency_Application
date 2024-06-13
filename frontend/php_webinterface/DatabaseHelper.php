@@ -310,6 +310,49 @@ class DatabaseHelper
         return $res;
     }
 
+    # refill database button
+    public function RefillDatabase() {
+        // Path to the SQL file
+        $sqlPath = '/var/www/html/rebuild_data.sql';
+
+        // Read and execute SQL file content
+        $sql = file_get_contents($sqlPath);
+        if ($sql === false) {
+            die("Failed to read SQL file: $sqlPath");
+        }
+
+        if ($this->conn->multi_query($sql) === false) {
+            die("Failed to execute SQL: " . $this->conn->error);
+        }
+
+        // Wait for all queries to complete
+        do {
+            if ($result = $this->conn->store_result()) {
+                $result->free();
+            }
+        } while ($this->conn->next_result());
+
+        // Retry logic for preventing deadlocks
+        $maxRetries = 5;
+        $attempts = 0;
+        $success = false;
+        while ($attempts < $maxRetries && !$success) {
+            try {
+                $output = shell_exec('python3 /var/www/html/Queensman_imse_Insert.py');
+                if ($output === null) {
+                    throw new Exception("Python script execution failed.");
+                }
+                $success = true;
+            } catch (Exception $e) {
+                $attempts++;
+                if ($attempts >= $maxRetries) {
+                    die("Max retries reached. Failed to execute Python script.");
+                }
+                sleep(5);
+            }
+        }
+    }
+
     //################USECASE1################
     public function selectAllMissions()
     {   

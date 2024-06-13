@@ -56,11 +56,15 @@
 
     if (isset($_POST['bt_migrateToMongo'])) {
         $_SESSION['use_mongodb'] = true;
-        echo "Hallo there";
         // Execute the Python script for migration
         $output = shell_exec('python3 /var/www/html/scripts/mongo_insert.py');
 
         echo "<pre>$output</pre>";
+    }
+
+    if (isset($_POST['bt_fillRelDatabase'])) {
+        // Execute the Python script for migration
+        $database->RefillDatabase();
     }
 ?>
 
@@ -74,19 +78,29 @@
     </head>
 
     <body>
-    <form action="" method="post">
-        <button name="bt_migrateToMongo" type="submit">Migrate to MongoDB</button>
-    </form>
         <div class="masterdiv">
-            <div class="header_div">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <td style="width: 33.33%;"> Welcome <?php echo $_SESSION['Username']; ?> </td>
-                        <td style="width: 33.33%;"> <img class="header_img" src="Queensman_logo_green.png"> </td>
-                        <td style="width: 33.33%;"> <a href="logout.php" class="logout">Logout</a></td>
-                    </tr>
-                </table>
-            </div>
+        <div class="header_div">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="width: 33.33%;">
+                        <div style="display: flex; align-items: center;">
+                            Welcome <?php echo $_SESSION['Username']; ?>
+                            <?php if (!isset($_SESSION['use_mongodb'])) { ?>
+                                <form action="" method="post" style="margin: 0; padding: 0; display: inline;">
+                                    <button name="bt_fillRelDatabase" type="submit" style="margin-left: 10px;">ReFill Database</button>
+                                </form>
+                            <?php } ?>
+                            <form action="" method="post" style="margin: 0; padding: 0; display: inline;">
+                                <button name="bt_migrateToMongo" type="submit" style="margin-left: 10px;">Migrate to MongoDB</button>
+                            </form>
+                        </div>
+                    </td>
+                    <td style="width: 33.33%;"> <img class="header_img" src="Queensman_logo_green.png"> </td>
+                    <td style="width: 33.33%;"> <a href="logout.php" class="logout">Logout</a></td>
+                </tr>
+            </table>
+        </div>
+
 
             <form action="" method="get" name="agent_form">
                 <div class="agent_table" >

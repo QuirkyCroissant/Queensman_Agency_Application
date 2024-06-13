@@ -49,6 +49,13 @@
         $assigned_agents = $database->selectAgentsAssignedToMission($m_id);
         $assigned_agent_ids = array_column($assigned_agents, 'A_ID');
     }
+
+    if (isset($_POST['bt_migrateToMongo'])) {
+        echo "Hallo there";
+        // Execute the Python script for migration
+        $output = shell_exec('python3 /var/www/html/scripts/mongo_insert.py');
+        echo "<pre>$output</pre>";
+    }
 ?>
 
 
@@ -61,7 +68,9 @@
     </head>
 
     <body>
-    
+    <form action="" method="post">
+        <button name="bt_migrateToMongo" type="submit">Migrate to MongoDB</button>
+    </form>
         <div class="masterdiv">
             <div class="header_div">
                 <table style="width: 100%; border-collapse: collapse;">

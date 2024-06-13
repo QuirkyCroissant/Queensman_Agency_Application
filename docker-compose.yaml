@@ -9,6 +9,7 @@ services:
       - "80:80"
     volumes:
       - ./frontend/php_webinterface:/var/www/html
+      - ./non_relational/mongo_scripts/init/:/var/www/html/scripts
     depends_on:
       mysql:
         condition: service_healthy
@@ -23,6 +24,7 @@ services:
       - mongodb
     volumes:
       - ./relational/mysql_scripts:/backend/relational/mysql_scripts
+      - ./non_relational/mongo_scripts/init:/backend/non_relational/mongo_scripts/init
 
   mysql:
     image: mysql:8.0

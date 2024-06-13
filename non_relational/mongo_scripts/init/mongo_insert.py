@@ -3,7 +3,7 @@ import mysql.connector
 from datetime import datetime, date
 
 # Connect to MongoDB
-client = MongoClient('mongodb://localhost:27017/')
+client = MongoClient('mongodb://mongodb:27017/')
 db = client['queensmandb']
 
 # Drop collections if they already exist
@@ -15,11 +15,11 @@ db.external_partners.drop()
 
 # Connect to MySQL
 mysql_conn = mysql.connector.connect(
-    host='localhost',
+    host='mysqldb',
     user='root',
     password='Schikuta<3',
     database='mysql_queensmandb',
-    port=3307
+    port=3306
 )
 cursor = mysql_conn.cursor(dictionary=True)
 
@@ -168,8 +168,8 @@ for mission in missions:
 # Create Indexes
 
 db.employees.create_index("employee_id")
-db.employees.create_index("first_name")
-db.employees.create_index("last_name")
+db.employees.create_index("roles.agent_id")
+db.employees.create_index("assignments.branch_id")
 
 db.branches.create_index("branch_id")
 db.branches.create_index("name")
@@ -178,6 +178,7 @@ db.missionlogs.create_index("mission_id")
 db.missionlogs.create_index("agents.agent_id")
 db.missionlogs.create_index("date")
 db.missionlogs.create_index("status")
+db.missionlogs.create_index("subject.subject_id")
 
 
 cursor.close()

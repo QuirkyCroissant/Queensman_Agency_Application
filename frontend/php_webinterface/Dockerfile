@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     git \
+    python3 \
+    python3-pip \
     && docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql \
     && pecl install mongodb \
     && docker-php-ext-enable mongodb
@@ -28,5 +30,8 @@ RUN composer install
 
 # Copy the rest of the application files
 COPY . /var/www/html/
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 
 EXPOSE 80

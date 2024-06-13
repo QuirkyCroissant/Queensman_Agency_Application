@@ -23,35 +23,34 @@ mysql_conn = mysql.connector.connect(
 )
 cursor = mysql_conn.cursor(dictionary=True)
 
-# Converter to transform date into datetime(the former is not support by json)
+# Converter to transform date into datetime(the former is not supported by json)
 def convert_date_to_datetime(d):
-    if isinstance(d, date):  # Using date from datetime module
+    if isinstance(d, date): 
         return datetime.combine(d, datetime.min.time())
     return d
 
-# Fetch and create employees data
+# Fetch employees data
 cursor.execute("""
-    SELECT e.*, pc.*, a.A_ID as agent_id, a.CAPABILITY_LEVEL, t.T_ID as tool_id, t.DESCRIPTION as tool_description, t.AMOUNT as tool_amount, 
-           an.E_ID as analyst_id, an.SPECIALISATION, an.YEARS_OF_EXPERIENCE, at.ASS_B_ID as branch_id, at.SINCE, at.TILL
+    SELECT e.*, pc.*
     FROM EMPLOYEE e
-    LEFT JOIN AGENT a ON e.E_ID = a.E_ID
-    LEFT JOIN TOOL t ON a.A_ID = t.FK_A_ID
-    LEFT JOIN ANALYST an ON e.E_ID = an.E_ID
-    LEFT JOIN ASSIGNED_TO at ON e.E_ID = at.ASS_E_ID
     LEFT JOIN POST_CODE pc ON e.FK_POST_CODE = pc.PC_ID
 """)
 employees = cursor.fetchall()
 
 for employee in employees:
     roles = []
-    if employee['agent_id']:
+    
+    # Fetch agent data if exists
+    cursor.execute("SELECT * FROM AGENT WHERE E_ID = %s", (employee['E_ID'],))
+    agent_data = cursor.fetchone()
+    if agent_data:
         agent_role = {
             "role": "Agent",
-            "agent_id": employee['agent_id'],
-            "capability_level": employee['CAPABILITY_LEVEL'],
+            "agent_id": agent_data['A_ID'],
+            "capability_level": agent_data['CAPABILITY_LEVEL'],
             "tools": []
         }
-        cursor.execute("SELECT * FROM TOOL WHERE FK_A_ID = %s", (employee['agent_id'],))
+        cursor.execute("SELECT * FROM TOOL WHERE FK_A_ID = %s", (agent_data['A_ID'],))
         tools = cursor.fetchall()
         for tool in tools:
             agent_role["tools"].append({
@@ -60,15 +59,19 @@ for employee in employees:
                 "amount": tool['AMOUNT']
             })
         roles.append(agent_role)
-
-    if employee['analyst_id']:
+    
+    # Fetch analyst data if exists
+    cursor.execute("SELECT * FROM ANALYST WHERE E_ID = %s", (employee['E_ID'],))
+    analyst_data = cursor.fetchone()
+    if analyst_data:
         roles.append({
             "role": "Analyst",
-            "analyst_id": employee['analyst_id'],
-            "specialisation": employee['SPECIALISATION'],
-            "years_of_experience": employee['YEARS_OF_EXPERIENCE']
+            "analyst_id": analyst_data['E_ID'],
+            "specialisation": analyst_data['SPECIALISATION'],
+            "years_of_experience": analyst_data['YEARS_OF_EXPERIENCE']
         })
-
+    
+    # Fetch assignments
     assignments = []
     cursor.execute("SELECT * FROM ASSIGNED_TO WHERE ASS_E_ID = %s", (employee['E_ID'],))
     assignments_data = cursor.fetchall()
@@ -86,7 +89,6 @@ for employee in employees:
         "email_address": employee['EMAIL_ADDRESS'],
         "street": employee['STREET'],
         "telephone_number": employee['TELEPHONE_NUMBER'],
-        #"post_code": employee['FK_POST_CODE'],
         "post_code": {
             "pc_id": employee['PC_ID'],
             "post_code": employee['POST_CODE'],
@@ -116,7 +118,6 @@ for branch in branches:
             "post_code": branch['POST_CODE'],
             "city": branch['CITY']
         },
-        #"post_code": branch['FK_POST_CODE'],
         "facility_type": {
             "type_id": branch['FK_TYPE'],
             "type": branch['facility_type'],

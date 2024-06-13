@@ -56,7 +56,7 @@ if (isset($_POST['bt_fillRelDatabase'])) {
 </head>
 <body class="showHQ">
     <div class="masterdiv">
-        <div class="header_div" style="margin-top: 0;">
+        <div class="header_div" style="margin-top: 0; background: 000;">
         <table style="width: 100%; border-collapse: collapse;">
                 <tr>
                     <td style="width: 33.33%;">

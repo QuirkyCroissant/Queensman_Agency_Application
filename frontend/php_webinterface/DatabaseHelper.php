@@ -118,23 +118,79 @@ class DatabaseHelper
         return $success;
     }
 
-
+    ######## data analytics - Employee Assignments ########
     public function getEmployeeAssignments($e_id) {
-        $sql = "SELECT ASS_ID, NAME, ft.`TYPE`, CITY, SINCE, TILL  
-                FROM ASSIGNED_TO 
-                LEFT JOIN BRANCH ON ASS_B_ID = B_ID 
-                LEFT JOIN FACILITY_TYPE ft ON FK_TYPE=ft.FT_ID 
-                LEFT JOIN POST_CODE pc ON FK_POST_CODE  = PC_ID 
-                WHERE ASS_E_ID = ?";
+        if (isset($_SESSION['use_mongodb']) && $_SESSION['use_mongodb']) {
+            $collection = $this->mongoDb->employees;
 
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('i', $e_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $res = $result->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
+            $pipeline = [
+                [
+                    '$match' => [
+                        'employee_id' => (int) $e_id
+                    ]
+                ],
+                [
+                    '$unwind' => '$assignments'
+                ],
+                [
+                    '$lookup' => [
+                        'from' => 'branches',
+                        'localField' => 'assignments.branch_id',
+                        'foreignField' => 'branch_id',
+                        'as' => 'branch_info'
+                    ]
+                ],
+                [
+                    '$unwind' => '$branch_info'
+                ],
+                [
+                    '$project' => [
+                        'ASS_ID' => '$assignments.branch_id',
+                        'NAME' => '$branch_info.name',
+                        'TYPE' => '$branch_info.facility_type.type',
+                        'CITY' => '$branch_info.post_code.city',
+                        'SINCE' => [
+                            '$dateToString' => [
+                                'format' => '%Y-%m-%d',
+                                'date' => '$assignments.since'
+                            ]
+                        ],
+                        'TILL' => [
+                            '$cond' => [
+                                'if' => ['$eq' => ['$assignments.till', null]],
+                                'then' => null,
+                                'else' => [
+                                    '$dateToString' => [
+                                        'format' => '%Y-%m-%d',
+                                        'date' => '$assignments.till'
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ];
 
-        return $res;
+            $result = $collection->aggregate($pipeline)->toArray();
+
+            return $result;
+
+        } else{
+            $sql = "SELECT ASS_ID, NAME, ft.`TYPE`, CITY, SINCE, TILL  
+                    FROM ASSIGNED_TO 
+                    LEFT JOIN BRANCH ON ASS_B_ID = B_ID 
+                    LEFT JOIN FACILITY_TYPE ft ON FK_TYPE=ft.FT_ID 
+                    LEFT JOIN POST_CODE pc ON FK_POST_CODE  = PC_ID 
+                    WHERE ASS_E_ID = ?";
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param('i', $e_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $res = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+            return $res;
+        }
     }
 
     public function getSuperiorAndTeam($e_id) {

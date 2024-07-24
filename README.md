@@ -79,14 +79,15 @@ The web application provides an intuitive interface for managing the espionage a
 After migration the web application can be operated like before, the user will not notice that the data is now being stored 
 and processed on a nonrelational database.
 
-
-<figure style="text-align: center;">
-  <div style="display: flex; flex-direction: row; justify-content: space-between;">
-    <img src="qm_login_screen.png" alt="logo1" style="width: 35%; margin-right: 5%;">
-    <img src="qm_main_screen.png" alt="logo2" style="width: 35%;">
+<figure style="text-align: center; width: 100%;">
+  <div style="display: inline-block;">
+    <img src="qm_login_screen.PNG" alt="login_screen" style="height: 200px; margin-right: 10px;">
+    <img src="qm_main_screen.PNG" alt="main_screen" style="height: 200px;">
   </div>
   <figcaption>Login and Main Window of Webinterface</figcaption>
 </figure>
+
+
 
 ***
 
@@ -201,8 +202,8 @@ For more details on the project, please refer to the reports in the [project doc
 
 ## Acknowledgement 
 
-This project was an extension of a previous web project written by @QuirkyCroissant, and was further 
-developed as an assignment as part of the coursework for ~Information Management & Systems Engineering~
+This project was an extension of a previous web project written by [QuirkyCroissant](https://github.com/QuirkyCroissant), and was further 
+developed together with [LOG1CBOMB](https://github.com/LOG1CBOMB) as an assignment as part of the coursework for _Information Management & Systems Engineering_
 at the University of Vienna.
 
 ## License

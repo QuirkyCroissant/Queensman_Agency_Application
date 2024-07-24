@@ -1,4 +1,5 @@
 mysql-connector-python==8.0.31
 pandas==1.5.3
+numpy==1.24.4
 Faker==18.9.0
 tqdm==4.64.1
